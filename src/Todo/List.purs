@@ -47,9 +47,9 @@ listView model =
   node "div" [ attribute "class" "pure-u-1-1" ] $
     if null model.todos
       then
-        [ node "p" [ attribute "class" "pure-u-1-1" ] [ text "Your todo-list is empty." ] ]
+        [ node "h2" [ attribute "class" "pure-u-1-1" ] [ text "Your todo-list is empty." ] ]
       else
-        [ node "p" [ ] [ text "Your todo list is:"]
+        [ node "h2" [ ] [ text "Your todo list is:"]
         , node "ul" [ attribute "class" "pure-u-1-1" ]
           (map listEntryView model.todos)
         ]

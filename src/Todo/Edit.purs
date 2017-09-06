@@ -2,9 +2,9 @@ module Todo.Edit where
 
 import Prelude
 
-import Bonsai (UpdateResult, VNode, attribute, node, text, plainResult)
+import Bonsai (UpdateResult, VNode, attribute, node, text, plainResult, property)
+import Bonsai.Event (onInput, onClickWithOptions, preventDefaultStopPropagation)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Bonsai.Event (onSubmit, onInput, onClick)
 
 type EditModel =
   { todo  :: String
@@ -33,7 +33,8 @@ editView :: EditModel -> VNode EditMsg
 editView model = -- traceMsg "view" $
   node "form"
     [ attribute "class" "pure-form pure-u-1-1"
-    , onSubmit (const $ pure Ok) ]
+    -- , onSubmit (const $ pure Ok)
+    ]
     [ node "fieldset" []
       [ node "legend" [] [ text "What do you want to do?" ]
       , node "input"
@@ -41,8 +42,12 @@ editView model = -- traceMsg "view" $
         , attribute "name" "todo"
         , attribute "type" "text"
         , attribute "placeholder" "Todo"
-        -- initial value!
-        , attribute "value" model.todo
+
+        -- note "property" value
+        -- if you use attribute, the value will be set in the DOM
+        -- but the field will not update.
+        -- property *will* update the field
+        , property "value" model.todo
         , onInput \todo -> pure $ Changed todo ]
         [ ]
       , node "div" [ attribute "class" "pure-u-1-12" ] []
@@ -50,18 +55,16 @@ editView model = -- traceMsg "view" $
         [ attribute "type" "submit"
         , attribute "class" "pure-u-1-12 pure-button pure-button-primary"
         , attribute "name" "ok"
-        -- enter will onsubmit, but not onclick
-        -- , on "click" cmdOk
+        , onClickWithOptions preventDefaultStopPropagation (const $ pure Ok)
         ]
         [ text $ fromMaybe "Add" $ const "Update" <$> model.pk ]
       , node "button"
         [ attribute "type" "reset"
         , attribute "class" "pure-u-1-12 pure-button"
         , attribute "name" "cancel"
-        , onClick (const $ pure Reset) ]
+        , onClickWithOptions preventDefaultStopPropagation (const $ pure Reset) ]
         [ text "Reset" ]
-      , node "h2" [] [ text "Your input was:" ]
-      , node "p" [] [ text model.todo ]
+      , node "p" [] [ text ("Input value: " <> model.todo) ]
       ]
     ]
 
