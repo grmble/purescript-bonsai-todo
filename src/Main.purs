@@ -2,18 +2,16 @@ module Main where
 
 import Prelude
 
-import Bonsai (program)
-import Bonsai.DOM (domElementById)
-import Bonsai.VirtualDom (VNode, node, attribute)
+import Bonsai (UpdateResult, VNode, attribute, domElementById, mapResult, node, program)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Ref (REF)
-import Data.Maybe (Maybe(..))
 import DOM (DOM)
 import DOM.Node.Types (ElementId(..))
+import Data.Maybe (Maybe(..))
 import Partial.Unsafe (unsafePartial)
-import Todo.Edit (EditModel, EditMsg, editUpdate, editView)
-import Todo.List (ListModel, ListMsg, listUpdate, listView)
+import Todo.Edit (EditModel, EditMsg(..), editUpdate, editView)
+import Todo.List (ListModel, ListMsg(..), listUpdate, listView)
 
 main :: forall e. Eff (console::CONSOLE,dom::DOM,ref::REF| e) Unit
 main = unsafePartial $ do
@@ -36,13 +34,43 @@ data Msg
   = MainEditMsg EditMsg
   | MainListMsg ListMsg
 
-update :: Model -> Msg -> Model
+saveEditEntryMsg :: EditModel -> ListMsg
+saveEditEntryMsg editModel =
+  case editModel.pk of
+    Nothing -> Create editModel.todo
+    Just pk -> Update { pk: pk, todo: editModel.todo }
+
+update :: Model -> Msg -> UpdateResult Model Msg
 update model msg = -- traceMsg "update" $
   case msg of
+
     MainEditMsg editMsg ->
-      model { editModel = editUpdate model.editModel editMsg }
+
+      case editMsg of
+
+        SaveEditEntry entry ->
+          delegateListMsg $ saveEditEntryMsg entry
+
+        _ ->
+          delegateEditMsg editMsg
+
     MainListMsg listMsg ->
-      model { listModel = listUpdate model.listModel listMsg }
+      delegateListMsg listMsg
+
+  where
+
+    delegateListMsg listMsg =
+      mapResult
+        (model { listModel = _ })
+        MainListMsg
+        (listUpdate model.listModel listMsg)
+
+    delegateEditMsg editMsg =
+        mapResult
+          (model { editModel = _ })
+          MainEditMsg
+          (editUpdate model.editModel editMsg)
+
 
 view :: Model -> VNode Msg
 view model =
