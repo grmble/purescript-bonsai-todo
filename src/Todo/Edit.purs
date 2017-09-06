@@ -2,10 +2,9 @@ module Todo.Edit where
 
 import Prelude
 
-import Bonsai.VirtualDom (VNode, EventDecoder, attribute, node, on, onWithOptions, text)
-import Data.Either (Either(..))
+import Bonsai.VirtualDom (VNode, attribute, node, text)
 import Data.Maybe (Maybe)
-import Todo.Event (handleErrors, targetValue)
+import Bonsai.Event (onSubmit, onInput, onClick)
 
 type EditModel =
   { todo  :: String
@@ -23,7 +22,7 @@ editView :: EditModel -> VNode EditMsg
 editView model = -- traceMsg "view" $
   node "form"
     [ attribute "class" "pure-form pure-u-1-1"
-    , xon "submit" cmdOk ]
+    , onSubmit (const [Ok]) ]
     [ node "fieldset" []
       [ node "legend" [] [ text "What do you want to do?" ]
       , node "input"
@@ -33,7 +32,7 @@ editView model = -- traceMsg "view" $
         , attribute "placeholder" "Todo"
         -- initial value!
         , attribute "value" model.reset
-        , on "input" cmdChanged ]
+        , onInput \todo -> [Changed todo] ]
         [ ]
       , node "button"
         [ attribute "type" "submit"
@@ -47,26 +46,12 @@ editView model = -- traceMsg "view" $
         [ attribute "type" "reset"
         , attribute "class" "pure-button"
         , attribute "name" "cancel"
-        , on "click" cmdReset ]
+        , onClick (const [Reset]) ]
         [ text "Reset" ]
+      , node "h2" [] [ text "Your input was:" ]
+      , node "p" [] [ text model.todo ]
       ]
     ]
-  where
-    xon name what = onWithOptions name xOptions what
-    xOptions = { preventDefault: true, stopPropagation: true }
-
-cmdChanged :: EventDecoder EditMsg
-cmdChanged event = do
-  todo <- handleErrors targetValue event
-  Right [Changed todo]
-
-cmdReset :: EventDecoder EditMsg
-cmdReset _ =
-  Right [Reset]
-
-cmdOk :: EventDecoder EditMsg
-cmdOk _ =
-  Right [Ok]
 
 -- cmdSubmit :: EventDecoder EditMsg
 -- cmdSubmit event = do
@@ -80,7 +65,7 @@ cmdOk _ =
 
 
 editUpdate :: EditModel -> EditMsg -> EditModel
-editUpdate model msg = -- traceObj $
+editUpdate model msg = -- traceMsg "editUpdate" $
   case msg of
     Ok ->
       model { reset = model.todo, dirty = false }
