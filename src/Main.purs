@@ -4,24 +4,25 @@ import Prelude
 
 import Bonsai (UpdateResult, VNode, attribute, domElementById, mapResult, node, program)
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log)
+import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
 import DOM.Node.Types (ElementId(..))
 import Data.Maybe (Maybe(..))
 import Partial.Unsafe (unsafePartial)
-import Todo.Edit (EditModel, EditMsg(..), editUpdate, editView)
+import Todo.Edit (EditModel, EditMsg(..), editUpdate, editView, emptyEditModel)
 import Todo.List (ListModel, ListMsg(..), listUpdate, listView)
+import Todo.Parser (parseTodoTxt)
 
 main :: forall e. Eff (console::CONSOLE,dom::DOM,ref::REF| e) Unit
 main = unsafePartial $ do
   Just mainDiv  <- domElementById (ElementId "main")
-  prog <- program mainDiv update view emptyModel
-  log "..."
+  _ <- program mainDiv update view emptyModel
+  pure unit
 
 emptyModel :: Model
 emptyModel =
-  { editModel: { todo: "", reset: "", dirty: false, pk: Nothing }
+  { editModel: emptyEditModel
   , listModel: { maxPk: 0, todos: [] }
   }
 
@@ -38,7 +39,7 @@ saveEditEntryMsg :: EditModel -> ListMsg
 saveEditEntryMsg editModel =
   case editModel.pk of
     Nothing -> Create editModel.todo
-    Just pk -> Update { pk: pk, todo: editModel.todo }
+    Just pk -> Update { pk: pk, task: parseTodoTxt editModel.todo }
 
 update :: Model -> Msg -> UpdateResult Model Msg
 update model msg = -- traceMsg "update" $

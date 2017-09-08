@@ -3,9 +3,11 @@ where
 
 import Prelude
 
-import Bonsai (UpdateResult, VNode, attribute, node, plainResult, text)
-import Data.Array (filter, findIndex, null, snoc, updateAt)
+import Bonsai (UpdateResult, VNode, attribute, node, plainResult, text, style)
+import Data.Array (filter, findIndex, snoc, updateAt)
 import Data.Maybe (fromMaybe)
+import Data.Tuple (Tuple(..))
+import Todo.Parser (Task, parseTodoTxt, unTask)
 
 type ListModel =
   { maxPk :: Int
@@ -13,8 +15,8 @@ type ListModel =
   }
 
 type ListEntry =
-  { todo :: String
-  , pk :: Int
+  { task :: Task
+  , pk   :: Int
   }
 
 data ListMsg
@@ -26,7 +28,7 @@ createEntry :: ListModel -> String -> ListModel
 createEntry model str =
   let
     maxPk = model.maxPk + 1
-    entry = { todo: str, pk: maxPk }
+    entry = { task: parseTodoTxt str, pk: maxPk }
     todos = snoc model.todos entry
   in
     { maxPk, todos }
@@ -44,18 +46,35 @@ deleteEntry model entry =
 
 listView :: ListModel -> VNode ListMsg
 listView model =
-  node "div" [ attribute "class" "pure-u-1-1" ] $
-    if null model.todos
-      then
-        [ node "h2" [ attribute "class" "pure-u-1-1" ] [ text "Your todo-list is empty." ] ]
-      else
-        [ node "h2" [ ] [ text "Your todo list is:"]
-        , node "ul" [ attribute "class" "pure-u-1-1" ]
-          (map listEntryView model.todos)
+  node "table" [ attribute "class" "pure-u-2-3 pure-table pure-table-striped" ] $
+    [ node "colgroup" [ ]
+        [ node "col" [ style [ Tuple "width" "5em" ]] []
+        , node "col" [ style [ Tuple "width" "*" ]] []
+        , node "col" [ style [ Tuple "width" "10em" ]] []
+        , node "col" [ style [ Tuple "width" "10em" ]] []
         ]
+    , node "thead" []
+      [ node "tr" [ ]
+          [ node "th" [ attribute "class" "col-prio"] [ text "Prio" ]
+          , node "th" [ attribute "class" "col-todo"] [ text "Todo"]
+          , node "th" [ attribute "class" "col-comp"] [ text "Completed"]
+          , node "th" [ attribute "class" "col-crea"] [ text "Created"]
+          ]
+      ]
+    , node "tbody" []
+      (map listEntryView model.todos)
+    ]
   where
     listEntryView entry =
-      node "li" [] [ text entry.todo ]
+      let
+        tsk = unTask entry.task
+      in
+        node "tr" [ ] $
+          [ node "td" [] [ text $ fromMaybe "" tsk.priority ]
+          , node "td" [] [ text tsk.text ]
+          , node "td" [] [ text $ fromMaybe "" tsk.completionDate ]
+          , node "td" [] [ text $ fromMaybe "" tsk.creationDate ]
+          ]
 
 listUpdate :: ListModel -> ListMsg -> UpdateResult ListModel ListMsg
 listUpdate model msg =

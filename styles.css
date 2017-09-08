@@ -1,0 +1,15 @@
+.col-prio {
+  width: 3em;
+}
+
+.col-todo {
+  width: 90%;
+}
+
+.col-crea {
+  width: 10em;
+}
+
+.col-comp {
+  width: 10em;
+}
