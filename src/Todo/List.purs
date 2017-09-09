@@ -3,7 +3,7 @@ where
 
 import Prelude
 
-import Bonsai (UpdateResult, VNode, attribute, node, plainResult, text, property, style)
+import Bonsai (UpdateResult, VNode, attribute, node, keyedNode, plainResult, text, property, style)
 import Bonsai.Event (onInput, onClick)
 import Data.Array (concat, filter, findIndex, snoc, sortBy, updateAt)
 import Data.Foldable (class Foldable, foldl)
@@ -11,7 +11,7 @@ import Data.Maybe (fromMaybe)
 import Data.StrMap (StrMap, fromFoldableWith, toArrayWithKey)
 import Data.String (Pattern(..), contains, joinWith, split, trim)
 import Data.Tuple (Tuple(..))
-import Todo.Parser (Task(..), parseTodoTxt, todoTxt, unTask)
+import Todo.Parser (Task(..), parseTodoTxt, unTask)
 
 
 type ListModel =
@@ -21,7 +21,8 @@ type ListModel =
   }
 
 type ListEntry =
-  { task :: Task
+  { task :: Task   -- parsed from todoTxt
+  , line :: String -- unparsed todoTxt line
   , pk   :: Int
   }
 
@@ -35,7 +36,7 @@ createEntryNoSort :: ListModel -> String -> ListModel
 createEntryNoSort model str =
   let
     maxPk = model.maxPk + 1
-    entry = { task: parseTodoTxt str, pk: maxPk }
+    entry = { task: parseTodoTxt str, pk: maxPk, line: str }
     todos = snoc model.todos entry
   in
     model { maxPk = maxPk, todos = todos }
@@ -59,13 +60,13 @@ sortEntries :: ListModel -> ListModel
 sortEntries model =
   model { todos = sortBy order model.todos }
   where
-    order a b = (todoTxt a.task) `compare` (todoTxt b.task)
+    order a b = a.line `compare` b.line
 
-filteredTasks :: ListModel -> Array Task
-filteredTasks model =
+filteredEntries :: ListModel -> Array ListEntry
+filteredEntries model =
   filter
-    (\tsk -> contains (Pattern model.filter) (todoTxt tsk))
-    (map _.task model.todos)
+    (\entry -> contains (Pattern model.filter) entry.line)
+    model.todos
 
 importEntries :: ListModel -> String -> ListModel
 importEntries model str =
@@ -77,7 +78,7 @@ importEntries model str =
 
 exportEntries :: ListModel -> String
 exportEntries model =
-  joinWith "\r\n" $ (todoTxt <<< _.task) <$> model.todos
+  joinWith "\r\n" $ _.line <$> model.todos
 
 countWords :: forall f. Foldable f => Functor f => f String -> StrMap Int
 countWords words =
@@ -105,8 +106,8 @@ listView model =
               , node "th" [ attribute "class" "col-crea"] [ text "Created" ]
               ]
           ]
-        , node "tbody" []
-          (map todoTableView (filteredTasks model))
+        , keyedNode "tbody" []
+          (map todoTableView (filteredEntries model))
         ]
     , node "div"
         [ attribute "class" "pure-u-1-6" ]
@@ -125,15 +126,24 @@ listView model =
           ]
         ]
     ]
+
   where
-    todoTableView (Task tsk) =
-      node "tr" [ ] $
-        [ node "td" [] [ text $ if tsk.completed then "x" else "" ]
-        , node "td" [] [ text $ fromMaybe "" tsk.priority ]
-        , node "td" [] [ text tsk.text ]
-        , node "td" [] [ text $ fromMaybe "" tsk.completionDate ]
-        , node "td" [] [ text $ fromMaybe "" tsk.creationDate ]
-        ]
+  
+    todoTableView entry =
+      let
+        (Task tsk) =
+          entry.task
+        vnode =
+          node "tr" [ ] $
+            [ node "td" [] [ text $ if tsk.completed then "x" else "" ]
+            , node "td" [] [ text $ fromMaybe "" tsk.priority ]
+            , node "td" [] [ text tsk.text ]
+            , node "td" [] [ text $ fromMaybe "" tsk.completionDate ]
+            , node "td" [] [ text $ fromMaybe "" tsk.creationDate ]
+            ]
+      in
+        Tuple (show entry.pk) vnode
+
     tagView (Tuple name count) =
       node "li"
         [ onClick (FilterList name) ]

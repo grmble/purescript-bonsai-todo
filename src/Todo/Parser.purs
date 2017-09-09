@@ -15,7 +15,6 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (Pattern(..), indexOf, singleton, split)
-import Data.Tuple (Tuple(..), fst, snd)
 import Text.Parsing.StringParser (Parser, runParser)
 import Text.Parsing.StringParser.Combinators (option, optionMaybe)
 import Text.Parsing.StringParser.String (regex, string, upperCaseChar)
@@ -75,9 +74,10 @@ taskParser = do
   case done of
 
     true -> do
-      dates <- optionMaybe (Tuple <$> date <*> date)
+      comp <- optionMaybe date
+      crea <- optionMaybe date
       text <- regex """.*"""
-      pure $ task true Nothing (fst <$> dates) (snd <$> dates) text
+      pure $ task true Nothing comp crea text
 
     false -> do
       prio <- priority
