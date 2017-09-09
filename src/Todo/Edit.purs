@@ -41,8 +41,8 @@ editView model =
         -- but the field will not update.
         -- property *will* update the field
         , property "value" model
-        , onInput (pure <<< Changed)
-        , onEnter (pure Ok)
+        , Changed <$> onInput
+        , onEnter Ok
         ]
         [ ]
       , node "div" [ attribute "class" "pure-u-1-12" ] []
@@ -50,7 +50,7 @@ editView model =
         [ attribute "type" "submit"
         , attribute "class" "pure-u-1-12 pure-button pure-button-primary"
         , attribute "name" "ok"
-        , onClick (pure Ok)
+        , onClick Ok
         ]
         [ text "Add" ]
       ]

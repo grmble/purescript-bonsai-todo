@@ -117,7 +117,7 @@ listView model =
               , attribute "type" "text"
               , attribute "placeholder" "Filter"
               , property "value" model.filter
-              , onInput (pure <<< FilterList)
+              , FilterList <$> onInput
               ]
               [ ]
           , node "ul" [ attribute "class" "tag-list" ]
@@ -136,7 +136,7 @@ listView model =
         ]
     tagView (Tuple name count) =
       node "li"
-        [ onClick (pure $ FilterList name)]
+        [ onClick (FilterList name) ]
         [ text (name <> "(" <> show count <> ")")]
 
 listUpdate :: ListModel -> ListMsg -> UpdateResult ListModel ListMsg

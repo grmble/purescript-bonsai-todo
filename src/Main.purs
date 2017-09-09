@@ -109,7 +109,7 @@ viewTodo model =
     , MainListMsg <$> listView model.listModel
     , node "button"
         [ attribute "class" "pure-button"
-        , onClick (pure ImportExportStart) ]
+        , onClick ImportExportStart ]
         [ text "Import/Export" ]
     ]
 
@@ -122,10 +122,10 @@ viewImportExport model =
           [ attribute "class" "pure-input pure-u-1-1"
           , attribute "rows" "25"
           , property "value" (fromMaybe "" model.importExport)
-          , onInput (pure <<< ImportExportText)]
+          , ImportExportText <$> onInput ]
           []
       , node "button"
-          [ onClick $ pure ImportExportEnd ]
+          [ onClick ImportExportEnd ]
           [ text "OK" ]
       ]
     ]
