@@ -44,11 +44,11 @@ derive instance genericTask :: Generic Task _
 instance showTask :: Show Task where
   show = genericShow
 
-task :: Maybe String -> Maybe String -> Maybe String -> String -> Task
-task priority completionDate creationDate text =
+task :: Boolean -> Maybe String -> Maybe String -> Maybe String -> String -> Task
+task completed priority completionDate creationDate text =
   Task
     { priority
-    , completed: fromMaybe false (const true <$> priority)
+    , completed
     , completionDate
     , creationDate
     , text
@@ -77,13 +77,13 @@ taskParser = do
     true -> do
       dates <- optionMaybe (Tuple <$> date <*> date)
       text <- regex """.*"""
-      pure $ task Nothing (fst <$> dates) (snd <$> dates) text
+      pure $ task true Nothing (fst <$> dates) (snd <$> dates) text
 
     false -> do
       prio <- priority
       crea <- optionMaybe date
       text <- regex ".*"
-      pure $ task prio Nothing crea text
+      pure $ task false prio Nothing crea text
 
 -- Format task in todo txt format
 taskWriter :: Task -> Writer String Unit
@@ -118,7 +118,7 @@ parseTodoTxt str =
     Right tsk ->
       tsk
     Left _ ->
-      task Nothing Nothing Nothing str
+      task false Nothing Nothing Nothing str
 
 findWordsStartingWith :: Pattern -> String -> Array String
 findWordsStartingWith needle hay =

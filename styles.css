@@ -1,3 +1,7 @@
+.col-done {
+  width: 1em;
+}
+
 .col-prio {
   width: 3em;
 }
@@ -12,4 +16,10 @@
 
 .col-comp {
   width: 10em;
+}
+
+.tag-list {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
 }

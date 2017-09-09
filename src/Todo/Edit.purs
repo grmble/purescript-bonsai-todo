@@ -4,36 +4,25 @@ import Prelude
 
 import Bonsai (UpdateResult, VNode, attribute, node, plainResult, property, text)
 import Bonsai.Event (onClick, onInput, onEnter)
-import Data.Maybe (Maybe(..), fromMaybe)
 
-type EditModel =
-  { todo  :: String
-  , reset :: String
-  , pk    :: Maybe Int
-  , dirty :: Boolean
-  }
+type EditModel = String
 
 emptyEditModel :: EditModel
-emptyEditModel =
-  { todo: ""
-  , reset: ""
-  , pk: Nothing
-  , dirty: false
-  }
+emptyEditModel = ""
 
 data EditMsg
   -- local component messages
   = Ok
-  | Reset
   | Changed String
   -- requests that current edit model is saved to list
   | SaveEditEntry EditModel
 
 editView :: EditModel -> VNode EditMsg
-editView model = -- traceMsg "view" $
+editView model =
+  -- not a form!  form input handling (ESC!) considered harmful
   node "div"
-    [ attribute "class" "pure-form pure-u-1-1" ]
-    [ node "fieldset" []
+    [ attribute "class" "pure-form" ]
+    [ node "fieldset" [ attribute "class" "pure-g pure-u-1-1"]
       [ node "legend" []
         [ text "What would you like "
         , node "a" [ attribute "href" "https://github.com/todotxt/todotxt/"
@@ -42,7 +31,7 @@ editView model = -- traceMsg "view" $
         , text "?"
         ]
       , node "input"
-        [ attribute "class" "pure-u-2-3 pure-input"
+        [ attribute "class" "pure-u-5-6 pure-input"
         , attribute "name" "todo"
         , attribute "type" "text"
         , attribute "placeholder" "Todo"
@@ -51,7 +40,7 @@ editView model = -- traceMsg "view" $
         -- if you use attribute, the value will be set in the DOM
         -- but the field will not update.
         -- property *will* update the field
-        , property "value" model.todo
+        , property "value" model
         , onInput (pure <<< Changed)
         , onEnter (pure Ok)
         ]
@@ -63,15 +52,7 @@ editView model = -- traceMsg "view" $
         , attribute "name" "ok"
         , onClick (pure Ok)
         ]
-        [ text $ fromMaybe "Add" $ const "Update" <$> model.pk ]
-      , node "button"
-        [ attribute "type" "reset"
-        , attribute "class" "pure-u-1-12 pure-button"
-        , attribute "name" "cancel"
-        , onClick (pure Reset)
-        ]
-        [ text "Reset" ]
-      -- , node "p" [] [ text ("Input value: " <> model.todo) ]
+        [ text "Add" ]
       ]
     ]
 
@@ -82,9 +63,7 @@ editUpdate model msg = -- traceMsg "editUpdate" $
       { model: emptyEditModel
       , cmd: pure $ SaveEditEntry model
       }
-    Reset ->
-      plainResult $ model { todo = model.reset, dirty = false }
     Changed todo ->
-      plainResult $ model { todo = todo, dirty = true }
+      plainResult todo
     SaveEditEntry _ ->
       plainResult model
