@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 
-import Bonsai (UpdateResult, VNode, attribute, domElementById, mapResult, node, program, property, text, plainResult)
+import Bonsai (UpdateResult, VNode, attribute, domElementById, mapResult, node, debugProgram, property, text, plainResult)
 import Bonsai.Event (onClick, onInput)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
@@ -17,7 +17,7 @@ import Todo.List (ListModel, ListMsg(..), exportEntries, importEntries, listUpda
 main :: forall e. Eff (console::CONSOLE,dom::DOM,ref::REF| e) Unit
 main = unsafePartial $ do
   Just mainDiv  <- domElementById (ElementId "main")
-  _ <- program mainDiv update view emptyModel
+  _ <- debugProgram mainDiv true false update view emptyModel
   pure unit
 
 emptyModel :: Model

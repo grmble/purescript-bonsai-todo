@@ -95,9 +95,10 @@ countTags model =
 
 listView :: ListModel -> VNode ListMsg
 listView model =
-  node "div" [ attribute "class" "pure-g pure-u-1-1" ]
+  node "div" [ attribute "class" "pure-g" ]
     [ node "table" [ attribute "class" "pure-u-5-6 pure-table pure-table-striped" ] $
-        [ node "thead" []
+        [ node "caption" [] [ text "Your todo-list" ]
+        , node "thead" []
           [ node "tr" [ ]
               [ node "th" [ attribute "class" "col-done"] [ text "Done" ]
               , node "th" [ attribute "class" "col-prio"] [ text "Prio" ]
@@ -112,7 +113,10 @@ listView model =
     , node "div"
         [ attribute "class" "pure-u-1-6" ]
         [ node "div" [ style [Tuple "padding-left" "2em"] ]
-          [ node "input"
+          [ node "button"
+              [ onClick $ FilterList "" ]
+              [ text "Reset filter" ]
+          , node "input"
               [ attribute "class" "pure-input"
               , attribute "name" "filter"
               , attribute "type" "text"
@@ -128,7 +132,7 @@ listView model =
     ]
 
   where
-  
+
     todoTableView entry =
       let
         (Task tsk) =

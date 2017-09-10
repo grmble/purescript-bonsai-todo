@@ -44,15 +44,15 @@ instance showTask :: Show Task where
   show = genericShow
 
 task :: Boolean -> Maybe String -> Maybe String -> Maybe String -> String -> Task
-task completed priority completionDate creationDate text =
+task comp prio compDate creaDate txt =
   Task
-    { priority
-    , completed
-    , completionDate
-    , creationDate
-    , text
-    , projects: findWordsStartingWith (Pattern "+") text
-    , contexts: findWordsStartingWith (Pattern "@") text
+    { priority: prio
+    , completed: comp
+    , completionDate: compDate
+    , creationDate: creaDate
+    , text: txt
+    , projects: findWordsStartingWith (Pattern "+") txt
+    , contexts: findWordsStartingWith (Pattern "@") txt
     }
 
 unTask

@@ -2,8 +2,9 @@ module Todo.Edit where
 
 import Prelude
 
-import Bonsai (UpdateResult, VNode, attribute, node, plainResult, property, text)
+import Bonsai (UpdateResult, VNode, attribute, node, plainResult, property, style, text)
 import Bonsai.Event (onClick, onInput, onEnter)
+import Data.Tuple (Tuple(..))
 
 type EditModel = String
 
@@ -21,17 +22,20 @@ editView :: EditModel -> VNode EditMsg
 editView model =
   -- not a form!  form input handling (ESC!) considered harmful
   node "div"
-    [ attribute "class" "pure-form" ]
-    [ node "fieldset" [ attribute "class" "pure-g pure-u-1-1"]
-      [ node "legend" []
+    [ attribute "class" "pure-g" ]
+
+    [ node "legend" [ attribute "class" "pure-u-1-1" ]
         [ text "What would you like "
         , node "a" [ attribute "href" "https://github.com/todotxt/todotxt/"
                    , attribute "target" "_blank" ]
           [ text "to do"]
         , text "?"
         ]
-      , node "input"
-        [ attribute "class" "pure-u-5-6 pure-input"
+
+    , node "div" [ attribute "class" "pure-u-5-6 pure-form" ]
+
+      [ node "input"
+        [ attribute "class" "pure-input pure-u-1-1"
         , attribute "name" "todo"
         , attribute "type" "text"
         , attribute "placeholder" "Todo"
@@ -45,15 +49,20 @@ editView model =
         , onEnter Ok
         ]
         [ ]
-      , node "div" [ attribute "class" "pure-u-1-12" ] []
-      , node "button"
-        [ attribute "type" "submit"
-        , attribute "class" "pure-u-1-12 pure-button pure-button-primary"
-        , attribute "name" "ok"
-        , onClick Ok
-        ]
-        [ text "Add" ]
       ]
+
+    , node "div"
+        [ attribute "class" "pure-u-1-6" ]
+        [ node "div" [ style [Tuple "padding-left" "2em"] ]
+            [ node "button"
+              [ attribute "type" "submit"
+              , attribute "class" "pure-button pure-button-primary"
+              , attribute "name" "ok"
+              , onClick Ok
+              ]
+              [ text "Add" ]
+            ]
+        ]
     ]
 
 editUpdate :: EditModel -> EditMsg -> UpdateResult EditModel EditMsg
