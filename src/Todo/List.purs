@@ -122,7 +122,7 @@ listView model =
               , attribute "type" "text"
               , attribute "placeholder" "Filter"
               , property "value" model.filter
-              , FilterList <$> onInput
+              , onInput FilterList
               ]
               [ ]
           , node "ul" [ attribute "class" "tag-list" ]

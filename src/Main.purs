@@ -122,7 +122,7 @@ viewImportExport model =
           [ attribute "class" "pure-input pure-u-1-1"
           , attribute "rows" "25"
           , property "value" (fromMaybe "" model.importExport)
-          , ImportExportText <$> onInput ]
+          , onInput ImportExportText]
           []
       , node "button"
           [ onClick ImportExportEnd ]

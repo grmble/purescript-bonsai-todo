@@ -36,6 +36,7 @@ editView model =
 
       [ node "input"
         [ attribute "class" "pure-input pure-u-1-1"
+        , attribute "autofocus" "autofocus"
         , attribute "name" "todo"
         , attribute "type" "text"
         , attribute "placeholder" "Todo"
@@ -45,7 +46,7 @@ editView model =
         -- but the field will not update.
         -- property *will* update the field
         , property "value" model
-        , Changed <$> onInput
+        , onInput Changed
         , onEnter Ok
         ]
         [ ]
