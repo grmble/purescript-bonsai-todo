@@ -2,7 +2,7 @@ module Todo.Edit where
 
 import Prelude
 
-import Bonsai (UpdateResult, VNode, attribute, node, plainResult, property, style, text)
+import Bonsai (UpdateResult, VNode, attribute, node, plainResult, property, style, text, pureCommand)
 import Bonsai.Event (onClick, onInput, onEnter)
 import Data.Tuple (Tuple(..))
 
@@ -66,12 +66,12 @@ editView model =
         ]
     ]
 
-editUpdate :: EditModel -> EditMsg -> UpdateResult EditModel EditMsg
+editUpdate :: forall aff. EditModel -> EditMsg -> UpdateResult aff EditModel EditMsg
 editUpdate model msg = -- traceMsg "editUpdate" $
   case msg of
     Ok ->
       { model: emptyEditModel
-      , cmd: pure $ SaveEditEntry model
+      , cmd: pureCommand $ SaveEditEntry model
       }
     Changed todo ->
       plainResult todo

@@ -153,7 +153,7 @@ listView model =
         [ onClick (FilterList name) ]
         [ text (name <> "(" <> show count <> ")")]
 
-listUpdate :: ListModel -> ListMsg -> UpdateResult ListModel ListMsg
+listUpdate :: forall aff. ListModel -> ListMsg -> UpdateResult aff ListModel ListMsg
 listUpdate model msg =
   case msg of
     Create str ->

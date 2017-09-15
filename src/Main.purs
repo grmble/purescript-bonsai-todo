@@ -2,9 +2,11 @@ module Main where
 
 import Prelude
 
-import Bonsai (UpdateResult, VNode, attribute, domElementById, mapResult, node, debugProgram, property, text, plainResult)
+import Bonsai (UpdateResult, VNode, attribute, debugProgram, domElementById, laterCommand, mapResult, node, plainResult, property, text)
 import Bonsai.Event (onClick, onInput)
+import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
@@ -13,11 +15,13 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Partial.Unsafe (unsafePartial)
 import Todo.Edit (EditModel, EditMsg(..), editUpdate, editView, emptyEditModel)
 import Todo.List (ListModel, ListMsg(..), exportEntries, importEntries, listUpdate, listView)
+import Todo.Storage (STORAGE, getItem, setItem)
 
-main :: forall e. Eff (console::CONSOLE,dom::DOM,ref::REF| e) Unit
+main :: forall e. Eff (console::CONSOLE,dom::DOM,storage::STORAGE,ref::REF| e) Unit
 main = unsafePartial $ do
+  stored <- getItem "bonsai-todo"
   Just mainDiv  <- domElementById (ElementId "main")
-  _ <- debugProgram mainDiv true false update view emptyModel
+  _ <- debugProgram mainDiv true true update view (importModel stored)
   pure unit
 
 emptyModel :: Model
@@ -32,6 +36,11 @@ importModel Nothing =
   emptyModel
 importModel (Just str) =
   emptyModel { listModel = importEntries emptyModel.listModel str }
+
+storeModel :: forall eff. Model -> Aff (storage::STORAGE|eff) Msg
+storeModel model = do
+  liftEff $ setItem "bonsai-todo" (exportEntries model.listModel)
+  pure DoneSaving
 
 type Model =
   { editModel :: EditModel
@@ -49,13 +58,15 @@ data Msg
   | ImportExportStart
   | ImportExportText String
   | ImportExportEnd
+  | DoneSaving
+
 
 saveEditEntryMsg :: EditModel -> ListMsg
 saveEditEntryMsg editModel =
   Create editModel
 
-update :: Model -> Msg -> UpdateResult Model Msg
-update model msg = -- traceMsg "update" $
+update :: forall aff. Model -> Msg -> UpdateResult (storage::STORAGE|aff) Model Msg
+update model msg =
   case msg of
 
     MainEditMsg editMsg ->
@@ -78,7 +89,12 @@ update model msg = -- traceMsg "update" $
       plainResult model { importExport = Just str }
 
     ImportExportEnd ->
-      plainResult (importModel model.importExport)
+      { model: (importModel model.importExport)
+      , cmd: laterCommand (storeModel model)
+      }
+
+    DoneSaving ->
+      plainResult model
 
   where
 
