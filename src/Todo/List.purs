@@ -3,15 +3,21 @@ where
 
 import Prelude
 
-import Bonsai (UpdateResult, VNode, attribute, keyedNode, node, plainResult, property, pureCommand, style, text)
+import Bonsai (Cmd(..), UpdateResult, VNode, attribute, laterCommand, keyedNode, node, plainResult, property, pureCommand, style, text)
 import Bonsai.Event (onClick, onInput, onKeyEnter)
-import Data.Array (concat, filter, findIndex, snoc, sortBy, updateAt)
+import Control.Monad.Aff (delay)
+import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Console (CONSOLE, log)
+import Control.Monad.Eff.Class (liftEff)
+import Data.Array (concat, filter, findIndex, modifyAt, snoc, sortBy, updateAt)
 import Data.Foldable (class Foldable, foldl)
 import Data.Maybe (fromMaybe)
 import Data.StrMap (StrMap, fromFoldableWith, toArrayWithKey)
 import Data.String (Pattern(..), contains, joinWith, split, trim)
-import Data.Tuple (Tuple(..))
+import Data.Time.Duration (Milliseconds(..))
+import Data.Tuple (Tuple(..), snd, uncurry)
 import Todo.Parser (Task(..), parseTodoTxt, unTask)
+import Todo.Storage (STORAGE, setItem)
 
 
 type ListModel =
@@ -22,9 +28,10 @@ type ListModel =
   }
 
 type ListEntry =
-  { task :: Task   -- parsed from todoTxt
-  , line :: String -- unparsed todoTxt line
-  , pk   :: Int
+  { task      :: Task   -- parsed from todoTxt
+  , line      :: String -- unparsed todoTxt line
+  , pk        :: Int
+  , highlight :: Boolean
   }
 
 data ListMsg
@@ -34,20 +41,25 @@ data ListMsg
   | FilterList String
   | NewTodo String
   | CreateNewTodo String
+  | RemoveHighlight Int
 
 
-createEntryNoSort :: ListModel -> String -> ListModel
-createEntryNoSort model str =
+createEntryNoSort' :: Boolean -> ListModel -> String -> Tuple Int ListModel
+createEntryNoSort' highlight model str =
   let
     maxPk = model.maxPk + 1
-    entry = { task: parseTodoTxt str, pk: maxPk, line: str }
+    entry = { task: parseTodoTxt str, pk: maxPk, line: str, highlight }
     todos = snoc model.todos entry
   in
-    model { maxPk = maxPk, todos = todos }
+    Tuple maxPk (model { maxPk = maxPk, todos = todos })
 
-createEntry :: ListModel -> String -> ListModel
+createEntryNoSort :: Boolean -> ListModel -> String -> ListModel
+createEntryNoSort highlight model str =
+  snd $ createEntryNoSort' highlight model str
+
+createEntry :: ListModel -> String -> Tuple Int ListModel
 createEntry model str =
-  sortEntries $ createEntryNoSort model str
+  map sortEntries (createEntryNoSort' true model str)
 
 updateEntry :: ListModel -> ListEntry -> ListModel
 updateEntry model entry =
@@ -55,6 +67,13 @@ updateEntry model entry =
     idx <- findIndex (\e -> e.pk == entry.pk) model.todos
     todos <- updateAt idx entry model.todos
     pure $ sortEntries $ model { todos = todos }
+
+setHighlight :: Boolean -> ListModel -> Int -> ListModel
+setHighlight highlight model pk =
+  fromMaybe model $ do
+    idx <- findIndex (\e -> e.pk == pk) model.todos
+    todos <- modifyAt idx (\entry -> entry { highlight = highlight }) model.todos
+    pure $ model { todos = todos }
 
 deleteEntry :: ListModel -> ListEntry -> ListModel
 deleteEntry model entry =
@@ -75,7 +94,7 @@ filteredEntries model =
 importEntries :: ListModel -> String -> ListModel
 importEntries model str =
   sortEntries $
-    foldl createEntryNoSort model lines
+    foldl (createEntryNoSort false) model lines
   where
     lines =
       trim <$> split (Pattern "\n") str
@@ -96,6 +115,13 @@ countTags model =
   countWords $ concat $ tags <$> model.todos
   where
     tags e = (unTask e.task).projects <> (unTask e.task).contexts
+
+-- | Store the todo list to local storage
+storeModel :: forall eff. ListModel -> Eff (console::CONSOLE,storage::STORAGE|eff) (Array ListMsg)
+storeModel listModel = do
+  log "storing model"
+  setItem "bonsai-todo" (exportEntries listModel)
+  pure []
 
 listView :: ListModel -> VNode ListMsg
 listView model =
@@ -120,12 +146,12 @@ listView model =
         -- property, not attribute !!!
         -- with attribute the field won't change
         , property "value" model.newtodo
-        -- , onInput NewTodo
+        , onInput NewTodo
         , onKeyEnter CreateNewTodo
         ]
         [ ]
 
-      , node "table" [ attribute "class" "pure-table pure-table-striped" ] $
+      , node "table" [ attribute "class" "pure-table" ] $
           [ node "caption" [] [ text "Your todo-list" ]
           , node "thead" []
             [ node "tr" [ ]
@@ -167,8 +193,12 @@ listView model =
       let
         (Task tsk) =
           entry.task
+        rowAttrs =
+          if entry.highlight
+            then [ attribute "class" "highlight" ]
+            else [ ]
         vnode =
-          node "tr" [ ] $
+          node "tr" rowAttrs $
             [ node "td" [] [ text $ if tsk.completed then "x" else "" ]
             , node "td" [] [ text $ fromMaybe "" tsk.priority ]
             , node "td" [] [ text tsk.text ]
@@ -183,11 +213,11 @@ listView model =
         [ onClick (FilterList name) ]
         [ text (name <> "(" <> show count <> ")")]
 
-listUpdate :: forall aff. ListModel -> ListMsg -> UpdateResult aff ListModel ListMsg
+listUpdate :: forall aff. ListModel -> ListMsg -> UpdateResult (console::CONSOLE,storage::STORAGE|aff) ListModel ListMsg
 listUpdate model msg =
   case msg of
     Create str ->
-      plainResult $ createEntry model str
+      uncurry storedNoHighlight $ createEntry model str
 
     Update entry ->
       plainResult $ updateEntry model entry
@@ -204,3 +234,18 @@ listUpdate model msg =
     CreateNewTodo str ->
       { model: model { newtodo = "" }
       , cmd: pureCommand $ Create str }
+
+    RemoveHighlight pk ->
+      plainResult $ setHighlight false model pk
+
+  where
+    storedResult model =
+      { model: model, cmd: Now (storeModel model) }
+
+    storedNoHighlight pk model =
+      { model: model, cmd: laterCommand $ storeAndDelay pk model }
+      
+    storeAndDelay pk model = do
+      _ <- liftEff $ storeModel model
+      delay (Milliseconds 5000.0)
+      pure (RemoveHighlight pk)

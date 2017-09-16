@@ -2,19 +2,17 @@ module Main where
 
 import Prelude
 
-import Bonsai (UpdateResult, VNode, attribute, debugProgram, domElementById, laterCommand, mapResult, node, plainResult, property, text)
+import Bonsai (Cmd(..), UpdateResult, VNode, attribute, debugProgram, domElementById, mapResult, node, plainResult, property, text)
 import Bonsai.Event (onClick, onInput)
-import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
 import DOM.Node.Types (ElementId(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Partial.Unsafe (unsafePartial)
-import Todo.List (ListModel, ListMsg, exportEntries, importEntries, listUpdate, listView)
-import Todo.Storage (STORAGE, getItem, setItem)
+import Todo.List (ListModel, ListMsg, exportEntries, importEntries, listUpdate, listView, storeModel)
+import Todo.Storage (STORAGE, getItem)
 
 main :: forall e. Eff (console::CONSOLE,dom::DOM,storage::STORAGE,ref::REF| e) Unit
 main = unsafePartial $ do
@@ -35,11 +33,6 @@ importModel Nothing =
 importModel (Just str) =
   emptyModel { listModel = importEntries emptyModel.listModel str }
 
-storeModel :: forall eff. Model -> Aff (storage::STORAGE|eff) Msg
-storeModel model = do
-  liftEff $ setItem "bonsai-todo" (exportEntries model.listModel)
-  pure DoneSaving
-
 type Model =
   { listModel :: ListModel
   , importExport:: Maybe String
@@ -54,10 +47,9 @@ data Msg
   | ImportExportStart
   | ImportExportText String
   | ImportExportEnd
-  | DoneSaving
 
 
-update :: forall aff. Model -> Msg -> UpdateResult (storage::STORAGE|aff) Model Msg
+update :: forall aff. Model -> Msg -> UpdateResult (console::CONSOLE,storage::STORAGE|aff) Model Msg
 update model msg =
   case msg of
 
@@ -71,14 +63,16 @@ update model msg =
       plainResult model { importExport = Just str }
 
     ImportExportEnd ->
-      { model: (importModel model.importExport)
-      , cmd: laterCommand (storeModel model)
-      }
-
-    DoneSaving ->
-      plainResult model
+      let model2 = importModel model.importExport
+      in  { model: model2
+          , cmd: Now (store model2.listModel)
+          }
 
   where
+
+    store listModel = do
+      _ <- storeModel listModel
+      pure []
 
     delegateListMsg listMsg =
       mapResult
