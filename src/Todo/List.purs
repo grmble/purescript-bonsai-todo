@@ -3,8 +3,8 @@ where
 
 import Prelude
 
-import Bonsai (UpdateResult, VNode, attribute, node, keyedNode, plainResult, text, property, style)
-import Bonsai.Event (onInput, onClick)
+import Bonsai (UpdateResult, VNode, attribute, keyedNode, node, plainResult, property, pureCommand, style, text)
+import Bonsai.Event (onClick, onInput, onKeyEnter)
 import Data.Array (concat, filter, findIndex, snoc, sortBy, updateAt)
 import Data.Foldable (class Foldable, foldl)
 import Data.Maybe (fromMaybe)
@@ -15,9 +15,10 @@ import Todo.Parser (Task(..), parseTodoTxt, unTask)
 
 
 type ListModel =
-  { maxPk :: Int
-  , todos :: Array ListEntry
-  , filter:: String
+  { maxPk   :: Int
+  , todos   :: Array ListEntry
+  , filter  :: String
+  , newtodo :: String
   }
 
 type ListEntry =
@@ -31,6 +32,9 @@ data ListMsg
   | Update ListEntry
   | Delete ListEntry
   | FilterList String
+  | NewTodo String
+  | CreateNewTodo String
+
 
 createEntryNoSort :: ListModel -> String -> ListModel
 createEntryNoSort model str =
@@ -95,21 +99,47 @@ countTags model =
 
 listView :: ListModel -> VNode ListMsg
 listView model =
+  -- not a form!  form input handling (ESC!) considered harmful
   node "div" [ attribute "class" "pure-g" ]
-    [ node "table" [ attribute "class" "pure-u-5-6 pure-table pure-table-striped" ] $
-        [ node "caption" [] [ text "Your todo-list" ]
-        , node "thead" []
-          [ node "tr" [ ]
-              [ node "th" [ attribute "class" "col-done"] [ text "Done" ]
-              , node "th" [ attribute "class" "col-prio"] [ text "Prio" ]
-              , node "th" [ attribute "class" "col-todo"] [ text "Todo" ]
-              , node "th" [ attribute "class" "col-comp"] [ text "Completed" ]
-              , node "th" [ attribute "class" "col-crea"] [ text "Created" ]
-              ]
-          ]
-        , keyedNode "tbody" []
-          (map todoTableView (filteredEntries model))
+    [ node "legend" [ attribute "class" "pure-u-1-1" ]
+        [ text "What would you like "
+        , node "a" [ attribute "href" "https://github.com/todotxt/todotxt/"
+                   , attribute "target" "_blank" ]
+          [ text "to do"]
+        , text "?"
         ]
+
+    , node "div"
+      [ attribute "class" "pure-u-5-6 pure-form" ]
+      [ node "input"
+        [ attribute "class" "pure-input pure-u-1-1"
+        , attribute "autofocus" "autofocus"
+        , attribute "name" "todo"
+        , attribute "type" "text"
+        , attribute "placeholder" "Todo"
+        -- property, not attribute !!!
+        -- with attribute the field won't change
+        , property "value" model.newtodo
+        -- , onInput NewTodo
+        , onKeyEnter CreateNewTodo
+        ]
+        [ ]
+
+      , node "table" [ attribute "class" "pure-table pure-table-striped" ] $
+          [ node "caption" [] [ text "Your todo-list" ]
+          , node "thead" []
+            [ node "tr" [ ]
+                [ node "th" [ attribute "class" "col-done"] [ text "Done" ]
+                , node "th" [ attribute "class" "col-prio"] [ text "Prio" ]
+                , node "th" [ attribute "class" "col-todo"] [ text "Todo" ]
+                , node "th" [ attribute "class" "col-comp"] [ text "Completed" ]
+                , node "th" [ attribute "class" "col-crea"] [ text "Created" ]
+                ]
+            ]
+          , keyedNode "tbody" []
+            (map todoTableView (filteredEntries model))
+          ]
+      ]
     , node "div"
         [ attribute "class" "pure-u-1-6" ]
         [ node "div" [ style [Tuple "padding-left" "2em"] ]
@@ -167,3 +197,10 @@ listUpdate model msg =
 
     FilterList str ->
       plainResult $ model { filter = str }
+
+    NewTodo str ->
+      plainResult $ model { newtodo = str }
+
+    CreateNewTodo str ->
+      { model: model { newtodo = "" }
+      , cmd: pureCommand $ Create str }

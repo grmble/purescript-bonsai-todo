@@ -13,8 +13,7 @@ import DOM (DOM)
 import DOM.Node.Types (ElementId(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Partial.Unsafe (unsafePartial)
-import Todo.Edit (EditModel, EditMsg(..), editUpdate, editView, emptyEditModel)
-import Todo.List (ListModel, ListMsg(..), exportEntries, importEntries, listUpdate, listView)
+import Todo.List (ListModel, ListMsg, exportEntries, importEntries, listUpdate, listView)
 import Todo.Storage (STORAGE, getItem, setItem)
 
 main :: forall e. Eff (console::CONSOLE,dom::DOM,storage::STORAGE,ref::REF| e) Unit
@@ -26,8 +25,7 @@ main = unsafePartial $ do
 
 emptyModel :: Model
 emptyModel =
-  { editModel:    emptyEditModel
-  , listModel:    { maxPk: 0, todos: [], filter: ""}
+  { listModel:    { maxPk: 0, todos: [], filter: "", newtodo: "" }
   , importExport: Nothing
   }
 
@@ -43,8 +41,7 @@ storeModel model = do
   pure DoneSaving
 
 type Model =
-  { editModel :: EditModel
-  , listModel :: ListModel
+  { listModel :: ListModel
   , importExport:: Maybe String
   }
 
@@ -53,31 +50,16 @@ type Model =
 -- one message type.
 -- it remains in here so there is a test app for VirtualDOM event mapping
 data Msg
-  = MainEditMsg EditMsg
-  | MainListMsg ListMsg
+  = MainListMsg ListMsg
   | ImportExportStart
   | ImportExportText String
   | ImportExportEnd
   | DoneSaving
 
 
-saveEditEntryMsg :: EditModel -> ListMsg
-saveEditEntryMsg editModel =
-  Create editModel
-
 update :: forall aff. Model -> Msg -> UpdateResult (storage::STORAGE|aff) Model Msg
 update model msg =
   case msg of
-
-    MainEditMsg editMsg ->
-
-      case editMsg of
-
-        SaveEditEntry entry ->
-          delegateListMsg $ saveEditEntryMsg entry
-
-        _ ->
-          delegateEditMsg editMsg
 
     MainListMsg listMsg ->
       delegateListMsg listMsg
@@ -104,12 +86,6 @@ update model msg =
         MainListMsg
         (listUpdate model.listModel listMsg)
 
-    delegateEditMsg editMsg =
-        mapResult
-          (model { editModel = _ })
-          MainEditMsg
-          (editUpdate model.editModel editMsg)
-
 
 view :: Model -> VNode Msg
 view model =
@@ -121,8 +97,7 @@ viewTodo :: Model -> VNode Msg
 viewTodo model =
   node "div"
     [ ]
-    [ MainEditMsg <$> editView model.editModel
-    , MainListMsg <$> listView model.listModel
+    [ MainListMsg <$> listView model.listModel
     , node "button"
         [ attribute "class" "pure-button"
         , onClick ImportExportStart ]
