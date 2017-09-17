@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 
-import Bonsai (Cmd(..), UpdateResult, VNode, attribute, debugProgram, domElementById, mapResult, node, plainResult, property, text)
+import Bonsai (UpdateResult, VNode, attribute, debugProgram, domElementById, mapResult, node, plainResult, property, text, simpleTask)
 import Bonsai.Event (onClick, onInput)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
@@ -49,7 +49,7 @@ data Msg
   | ImportExportEnd
 
 
-update :: forall aff. Model -> Msg -> UpdateResult (console::CONSOLE,storage::STORAGE|aff) Model Msg
+update :: forall aff. Model -> Msg -> UpdateResult (console::CONSOLE,dom::DOM,ref::REF,storage::STORAGE|aff) Model Msg
 update model msg =
   case msg of
 
@@ -65,7 +65,7 @@ update model msg =
     ImportExportEnd ->
       let model2 = importModel model.importExport
       in  { model: model2
-          , cmd: Now (store model2.listModel)
+          , cmd: simpleTask (store model2.listModel)
           }
 
   where
