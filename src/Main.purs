@@ -7,11 +7,13 @@ import Bonsai.Event (onClick, onInput)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Ref (REF)
+import Data.Maybe (Maybe(..), fromMaybe)
 import DOM (DOM)
 import DOM.Node.Types (ElementId(..))
-import Data.Maybe (Maybe(..), fromMaybe)
 import Partial.Unsafe (unsafePartial)
-import Todo.List (ListModel, ListMsg, exportEntries, importEntries, listUpdate, listView, storeModel)
+import Todo.List.Controller (listUpdate)
+import Todo.List.Model (ListModel, ListMsg, emptyListModel, exportEntries, importEntries, storeModel)
+import Todo.List.View (listView)
 import Todo.Storage (STORAGE, getItem)
 
 main :: forall e. Eff (console::CONSOLE,dom::DOM,storage::STORAGE,ref::REF| e) Unit
@@ -23,7 +25,7 @@ main = unsafePartial $ do
 
 emptyModel :: Model
 emptyModel =
-  { listModel:    { maxPk: 0, todos: [], filter: "", newtodo: "" }
+  { listModel:    emptyListModel
   , importExport: Nothing
   }
 
