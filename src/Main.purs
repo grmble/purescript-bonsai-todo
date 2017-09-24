@@ -1,10 +1,9 @@
 module Main where
 
-import Bonsai.Html (button, div, textarea)
+import Bonsai.Html (VNode, (!), button, div, render, text, textarea, vnode)
 import Bonsai.Html.Attributes (cls, rows, value)
-import Bonsai (UpdateResult, VNode, debugProgram, domElementById, mapResult, plainResult, render, simpleTask, text, (!))
+import Bonsai (UpdateResult, debugProgram, domElementById, mapResult, plainResult, simpleTask)
 import Bonsai.Html.Events (onClick, onInput)
-import Bonsai.Html.Internal (vnode)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Ref (REF)

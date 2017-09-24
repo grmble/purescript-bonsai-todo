@@ -2,12 +2,11 @@ module Todo.List.View
 where
 
 
-import Bonsai.Html (a, button, caption, div, input, legend, li, table, td, th, thead, tr, ul)
+import Bonsai.Html (MarkupT, VNode, (!), (#!), (#!?), attribute, keyedElement, render, text, a, button, caption, div, input, legend, li, table, td, th, thead, tr, ul)
 import Bonsai.Html.Attributes (autofocus, cls, colspan, href, id_, name, placeholder, style, target, typ, value)
-import Bonsai (Cmd, VNode, pureCommand, render, text, (!), (#!), (#!?))
+import Bonsai (Cmd, pureCommand)
 import Bonsai.EventDecoder (dataAttributeEvent)
 import Bonsai.Html.Events (onClick, onInput, onKeyEnter, onKeyEnterEscape)
-import Bonsai.Html.Internal (MarkupT, attribute, keyedElement)
 import Bonsai.Types (f2cmd)
 import Bonsai.VirtualDom (on)
 import Control.Monad.Eff.Exception (Error)

@@ -108,7 +108,7 @@ importEntries :: ListModel -> String -> ListModel
 importEntries model str =
   foldl combine model lines
   where
-    combine model str = snd $ createEntry model str
+    combine m s = snd $ createEntry m s
     lines =
       filter (not <<< null)
         (trim <$> split (Pattern "\n") str)
