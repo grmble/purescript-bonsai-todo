@@ -2,18 +2,23 @@ module Todo.List.View
 where
 
 
-import Prelude
-
-import Bonsai (Cmd, VNode, attribute, keyedNode, node, property, pureCommand, style, text)
-import Bonsai.Event (on, onClick, onInput, onKeyEnter, onKeyEnterEscape, dataAttributeEvent)
+import Bonsai.Html (a, button, caption, div, input, legend, li, table, td, th, thead, tr, ul)
+import Bonsai.Html.Attributes (autofocus, cls, colspan, href, id_, name, placeholder, style, target, typ, value)
+import Bonsai (Cmd, VNode, pureCommand, render, text, (!), (#!), (#!?))
+import Bonsai.EventDecoder (dataAttributeEvent)
+import Bonsai.Html.Events (onClick, onInput, onKeyEnter, onKeyEnterEscape)
+import Bonsai.Html.Internal (MarkupT, attribute, keyedElement)
 import Bonsai.Types (f2cmd)
+import Bonsai.VirtualDom (on)
 import Control.Monad.Eff.Exception (Error)
 import Data.Either (Either)
 import Data.Foreign (Foreign)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.StrMap (toArrayWithKey)
+import Data.Traversable (traverse_)
 import Data.Tuple (Tuple(Tuple))
-import Todo.List.Model (ListModel, ListMsg(..), PK(..), countTags, filteredEntries, runPK)
+import Prelude hiding (div)
+import Todo.List.Model (ListModel, ListMsg(..), PK(..), ListEntry, countTags, filteredEntries, runPK)
 import Todo.Parser (Task(Task))
 
 
@@ -22,71 +27,47 @@ import Todo.Parser (Task(Task))
 listView :: ListModel -> VNode ListMsg
 listView model =
   -- not a form!  form input handling (ESC!) considered harmful
-  node "div" [ attribute "class" "pure-g" ]
-    [ node "legend" [ attribute "class" "pure-u-1-1" ]
-        [ text "What would you like "
-        , node "a" [ attribute "href" "https://github.com/todotxt/todotxt/"
-                   , attribute "target" "_blank" ]
-          [ text "to do"]
-        , text "?"
-        ]
+  render $ div ! cls "pure-g" $ do
+    legend ! cls "pure-u-1-1" $ do
+      text "What would you like "
+      a ! href "https://github.com/todotxt/todotxt/" ! target "_blank" $ do
+        text "to do"
+      text "?"
 
-    , node "div"
-      [ attribute "class" "pure-u-5-6 pure-form" ]
-      [ node "input"
-        [ attribute "class" "pure-input pure-u-1-1"
-        , attribute "autofocus" "autofocus"
-        , attribute "name" "todo"
-        , attribute "id"   "todo-create"
-        , attribute "type" "text"
-        , attribute "placeholder" "Todo"
-        -- property, not attribute !!!
-        -- with attribute the field won't change
-        , property "value" model.newtodo
-        -- , onInput NewTodo
-        , onKeyEnter Create
-        ]
-        [ ]
+    div ! cls "pure-u-5-6 pure-form" $ do
+      input
+        ! id_ "todo-create"
+        ! cls "pure-input pure-u-1-1"
+        ! autofocus true
+        ! name "todo"
+        ! typ "text"
+        ! placeholder "Todo"
+        ! value model.newtodo
+        ! onInput NewInput
+        ! onKeyEnter Create
 
-      , node "table"
-          [ attribute "class" "pure-table"
-          , on "dblclick" dataPkDecoder
-          ]
-          [ node "caption" [] [ text "Your todo-list" ]
-          , node "thead" []
-            [ node "tr" [ ]
-                [ node "th" [ attribute "class" "col-done"] [ text "Done" ]
-                , node "th" [ attribute "class" "col-prio"] [ text "Prio" ]
-                , node "th" [ attribute "class" "col-todo"] [ text "Todo" ]
-                , node "th" [ attribute "class" "col-comp"] [ text "Completed" ]
-                , node "th" [ attribute "class" "col-crea"] [ text "Created" ]
-                ]
-            ]
-          , keyedNode "tbody" []
-            (map todoTableView (filteredEntries model))
-          ]
-      ]
+      table ! cls "pure-table" ! on "dblclick" dataPkDecoder $ do
+        caption $ text "Your todo-list"
+        thead $ do
+          tr $ do
+            th ! cls "col-done" $ text "Done"
+            th ! cls "col-prio" $ text "Prio"
+            th ! cls "col-todo" $ text "Todo"
+            th ! cls "col-comp" $ text "Completed"
+            th ! cls "col-crea" $ text "Created"
 
-    , node "div"
-        [ attribute "class" "pure-u-1-6" ]
-        [ node "div" [ style [Tuple "padding-left" "2em"] ]
-          [ node "button"
-              [ onClick $ FilterList "" ]
-              [ text "Reset filter" ]
-          , node "input"
-              [ attribute "class" "pure-input"
-              , attribute "name" "filter"
-              , attribute "type" "text"
-              , attribute "placeholder" "Filter"
-              , property  "value" model.filter
-              , onInput FilterList
-              ]
-              [ ]
-          , node "ul" [ attribute "class" "tag-list" ]
-            (map tagView (toArrayWithKey Tuple (countTags model)))
-          ]
-        ]
-    ]
+        keyedElement "tbody" []
+          (map todoTableView (filteredEntries model))
+
+
+    div ! cls "pure-u-1-6" $ do
+      div #! style "padding-left" "2em" $ do
+        button ! onClick (FilterList "") $ text "Reset filter"
+        input ! cls "pure-input" ! name "filter" ! typ "text" ! placeholder "Filter"
+          ! value model.filter ! onInput FilterList
+
+        ul ! cls "tag-list" $ do
+          traverse_ tagView (toArrayWithKey Tuple (countTags model))
 
   where
 
@@ -101,47 +82,37 @@ listView model =
 
     todoTableEdit pk =
       Tuple pk $
-        node "tr" [ attribute "data-pk" pk ]
-          [ node "td" [ attribute "colspan" "5" ]
-              [ node "input"
-                  [ attribute "class" "pure-input pure-u-1-1"
-                  , attribute "name"  "todo-edit"
-                  , attribute "id"    ("todo-edit-" <> pk)
-                  , attribute "type"  "text"
-                  , property  "value" model.edittodo
-                  , onKeyEnterEscape SaveEdit (const CancelEdit)
-                  ]
-                  []
-              ]
-          ]
+        render $
+          tr ! attribute "data-pk" pk $ do
+            td ! colspan 5 $ do
+              input ! cls "pure-input pure-u-1-1"
+                ! name "todo-edit"
+                ! id_ ("todo-edit-" <> pk)
+                ! typ "text"
+                ! value model.edittodo
+                ! onKeyEnterEscape SaveEdit (const CancelEdit)
 
+    todoTableShow :: String -> ListEntry -> Tuple String (VNode ListMsg)
     todoTableShow pk entry =
       let
         (Task tsk) =
           entry.task
-        rowAttrs =
-          case entry.highlight of
-            Nothing ->
-              [ ]
-            Just color ->
-              [
-              style [(Tuple "background-color" (show color))]
-              ]
-        vnode =
-          node "tr" (rowAttrs <> [ attribute "data-pk" pk ]) $
-            [ node "td" [] [ text $ if tsk.completed then "x" else "" ]
-            , node "td" [] [ text $ fromMaybe "" tsk.priority ]
-            , node "td" [] [ text tsk.text ]
-            , node "td" [] [ text $ fromMaybe "" tsk.completionDate ]
-            , node "td" [] [ text $ fromMaybe "" tsk.creationDate ]
-            ]
+        markup :: MarkupT ListMsg
+        markup =
+          tr
+            #!? map (\c -> style "background-color" (show c)) entry.highlight
+            ! attribute "data-pk" pk $ do
+            td $ text $ if tsk.completed then "x" else ""
+            td $ text $ fromMaybe "" tsk.priority
+            td $ text tsk.text
+            td $ text $ fromMaybe "" tsk.completionDate
+            td $ text $ fromMaybe "" tsk.creationDate
       in
-        Tuple pk vnode
+        Tuple pk (render markup)
 
     tagView (Tuple name count) =
-      node "li"
-        [ onClick (FilterList name) ]
-        [ text (name <> "(" <> show count <> ")")]
+      li ! onClick (FilterList name) $ do
+        text (name <> "(" <> show count <> ")")
 
 
 
