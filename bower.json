@@ -21,7 +21,7 @@
     "purescript-foreign": "^4.0.1",
     "purescript-foreign-generic": "^5.0.0",
     "purescript-string-parsers": "^3.0.1",
-    "purescript-bonsai": "^0.2.0"
+    "purescript-bonsai": "^0.3.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"
