@@ -31,6 +31,9 @@ listUpdate model msg =
       uncurry storeFocusAndAnimate
         (map (\m -> m { newtodo = "" }) (createEntry model str))
 
+    NewInput str ->
+      plainResult $ model { newtodo = str }
+
     FilterList str ->
       plainResult $ model { filter = str }
 

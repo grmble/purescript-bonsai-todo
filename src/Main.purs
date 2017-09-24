@@ -1,16 +1,17 @@
 module Main where
 
-import Prelude
-
-import Bonsai (UpdateResult, VNode, attribute, debugProgram, domElementById, mapResult, node, plainResult, property, text, simpleTask)
-import Bonsai.Event (onClick, onInput)
+import Bonsai.Html (VNode, (!), button, div, render, text, textarea, vnode)
+import Bonsai.Html.Attributes (cls, rows, value)
+import Bonsai (UpdateResult, debugProgram, domElementById, mapResult, plainResult, simpleTask)
+import Bonsai.Html.Events (onClick, onInput)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Ref (REF)
-import Data.Maybe (Maybe(..), fromMaybe)
 import DOM (DOM)
 import DOM.Node.Types (ElementId(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Partial.Unsafe (unsafePartial)
+import Prelude hiding (div)
 import Todo.List.Controller (listUpdate)
 import Todo.List.Model (ListModel, ListMsg, emptyListModel, exportEntries, importEntries, storeModel)
 import Todo.List.View (listView)
@@ -91,28 +92,21 @@ view model =
 
 viewTodo :: Model -> VNode Msg
 viewTodo model =
-  node "div"
-    [ ]
-    [ MainListMsg <$> listView model.listModel
-    , node "button"
-        [ attribute "class" "pure-button"
-        , onClick ImportExportStart ]
-        [ text "Import/Export" ]
-    ]
+  render $ div $ do
+    vnode (MainListMsg <$> listView model.listModel)
+    button ! cls "pure-button" ! onClick ImportExportStart $ do
+      text "Import/Export"
 
 viewImportExport :: Model -> VNode Msg
 viewImportExport model =
-  node "div"
-    [ attribute "class" "pure-g"]
-    [ node "div" [ attribute "class" "pure-u-1-1"]
-      [ node "textarea"
-          [ attribute "class" "pure-input pure-u-1-1"
-          , attribute "rows" "25"
-          , property "value" (fromMaybe "" model.importExport)
-          , onInput ImportExportText]
-          []
-      , node "button"
-          [ onClick ImportExportEnd ]
-          [ text "OK" ]
-      ]
-    ]
+  render $
+    div ! cls "pure-g" $
+      div ! cls "pure-u-1-1" $ do
+        textarea
+          ! cls "pure-input pure-u-1-1"
+          ! rows 25
+          ! value (fromMaybe "" model.importExport)
+          ! onInput ImportExportText
+        button
+          ! onClick ImportExportEnd $
+          text "OK"

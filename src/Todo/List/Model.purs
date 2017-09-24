@@ -42,6 +42,9 @@ type ListEntry =
 
 data ListMsg
   = Create String
+  -- without NewInput, the animations will clear the input for new todos
+  -- so you cannot type when the animations are running
+  | NewInput String
   | FilterList String
   | SetHighlight (Maybe CssColor) PK
   | StartEdit PK
@@ -105,7 +108,7 @@ importEntries :: ListModel -> String -> ListModel
 importEntries model str =
   foldl combine model lines
   where
-    combine model str = snd $ createEntry model str
+    combine m s = snd $ createEntry m s
     lines =
       filter (not <<< null)
         (trim <$> split (Pattern "\n") str)
