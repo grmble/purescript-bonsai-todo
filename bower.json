@@ -15,13 +15,12 @@
     "output"
   ],
   "dependencies": {
-    "purescript-prelude": "^3.1.0",
+    "purescript-prelude": "^3.1.1",
     "purescript-console": "^3.0.0",
-    "pure": "^1.0.0",
     "purescript-foreign": "^4.0.1",
     "purescript-foreign-generic": "^5.0.0",
     "purescript-string-parsers": "^3.0.1",
-    "purescript-bonsai": "^0.3.0"
+    "purescript-bonsai": "^0.4.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"

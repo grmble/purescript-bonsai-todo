@@ -3,7 +3,7 @@ where
 
 import Prelude
 
-import Bonsai (Cmd, UpdateResult, emitMessages, plainResult, readerTask, simpleTask)
+import Bonsai (Cmd, UpdateResult, emitMessages, plainResult, emittingTask, simpleTask)
 import Bonsai.DOM (affElementAction, focusCmd, focusSelectCmd)
 import Control.Monad.Aff (delay)
 import Control.Monad.Eff.Console (CONSOLE)
@@ -66,14 +66,14 @@ storeFocusAndAnimateCmd
   -> ListModel
   -> Cmd (console::CONSOLE,dom::DOM,storage::STORAGE|aff) ListMsg
 storeFocusAndAnimateCmd pk m =
-  readerTask \ctx -> do
+  emittingTask \ctx -> do
     _ <- storeModel m
     -- set the focus to the element todo-create
     affElementAction (focus <<< unsafeCoerce) (ElementId "todo-create")
     for_ (gradient 16 highlightStartColor highlightEndColor) $ \col -> do
       emitMessages ctx [SetHighlight (Just col) pk]
       delay (Milliseconds 200.0)
-    pure [SetHighlight Nothing pk]
+    emitMessages ctx [SetHighlight Nothing pk]
 
 
 highlightStartColor :: CssColor

@@ -1,23 +1,25 @@
 module Main where
 
+import Prelude hiding (div)
+
+import Bonsai (UpdateResult, debugProgram, domElementById, mapResult, plainResult, simpleTask)
 import Bonsai.Html (VNode, (!), button, div, render, text, textarea, vnode)
 import Bonsai.Html.Attributes (cls, rows, value)
-import Bonsai (UpdateResult, debugProgram, domElementById, mapResult, plainResult, simpleTask)
 import Bonsai.Html.Events (onClick, onInput)
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
 import DOM.Node.Types (ElementId(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Partial.Unsafe (unsafePartial)
-import Prelude hiding (div)
 import Todo.List.Controller (listUpdate)
 import Todo.List.Model (ListModel, ListMsg, emptyListModel, exportEntries, importEntries, storeModel)
 import Todo.List.View (listView)
 import Todo.Storage (STORAGE, getItem)
 
-main :: forall e. Eff (console::CONSOLE,dom::DOM,storage::STORAGE,ref::REF| e) Unit
+main :: forall e. Eff (avar::AVAR,console::CONSOLE,dom::DOM,storage::STORAGE,ref::REF| e) Unit
 main = unsafePartial $ do
   stored <- getItem "bonsai-todo"
   Just mainDiv  <- domElementById (ElementId "main")
