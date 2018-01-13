@@ -2,28 +2,24 @@ module Main where
 
 import Prelude hiding (div)
 
-import Bonsai (UpdateResult, debugProgram, domElementById, mapResult, plainResult, simpleTask)
+import Bonsai (BONSAI, ElementId(..), UpdateResult, debugProgram, emittingTask, mapResult, plainResult, window)
 import Bonsai.Html (VNode, (!), button, div, render, text, textarea, vnode)
 import Bonsai.Html.Attributes (cls, rows, value)
 import Bonsai.Html.Events (onClick, onInput)
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE)
-import Control.Monad.Eff.Ref (REF)
-import DOM (DOM)
-import DOM.Node.Types (ElementId(..))
+import Control.Monad.Eff.Exception (EXCEPTION)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Partial.Unsafe (unsafePartial)
 import Todo.List.Controller (listUpdate)
 import Todo.List.Model (ListModel, ListMsg, emptyListModel, exportEntries, importEntries, storeModel)
 import Todo.List.View (listView)
 import Todo.Storage (STORAGE, getItem)
 
-main :: forall e. Eff (avar::AVAR,console::CONSOLE,dom::DOM,storage::STORAGE,ref::REF| e) Unit
-main = unsafePartial $ do
+main :: forall e. Eff (bonsai::BONSAI,exception::EXCEPTION,storage::STORAGE| e) Unit
+main = do
   stored <- getItem "bonsai-todo"
-  Just mainDiv  <- domElementById (ElementId "main")
-  _ <- debugProgram mainDiv true true update view (importModel stored)
+  _ <- window >>=
+    debugProgram (ElementId "main") update view (importModel stored) true true
   pure unit
 
 emptyModel :: Model
@@ -54,7 +50,7 @@ data Msg
   | ImportExportEnd
 
 
-update :: forall aff. Model -> Msg -> UpdateResult (console::CONSOLE,dom::DOM,ref::REF,storage::STORAGE|aff) Model Msg
+update :: forall aff. Model -> Msg -> UpdateResult (console::CONSOLE,bonsai::BONSAI,storage::STORAGE|aff) Model Msg
 update model msg =
   case msg of
 
@@ -70,7 +66,8 @@ update model msg =
     ImportExportEnd ->
       let model2 = importModel model.importExport
       in  { model: model2
-          , cmd: simpleTask (store model2.listModel)
+          , cmd: emittingTask \_ ->
+              store model2.listModel *> pure unit
           }
 
   where

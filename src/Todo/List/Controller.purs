@@ -3,14 +3,10 @@ where
 
 import Prelude
 
-import Bonsai (Cmd, UpdateResult, emitMessages, plainResult, emittingTask, simpleTask)
-import Bonsai.DOM (affElementAction, focusCmd, focusSelectCmd)
+import Bonsai (BONSAI, Cmd, UpdateResult, emitMessage, emittingTask, plainResult, simpleTask)
+import Bonsai.DOM (ElementId(..), affElementAction, focusCmd, focusElement, focusSelectCmd)
 import Control.Monad.Aff (delay)
 import Control.Monad.Eff.Console (CONSOLE)
-import Control.Monad.Eff.Ref (REF)
-import DOM (DOM)
-import DOM.HTML.HTMLElement (focus)
-import DOM.Node.Types (ElementId(..))
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(Nothing, Just))
 import Data.Time.Duration (Milliseconds(..))
@@ -18,13 +14,12 @@ import Data.Tuple (uncurry)
 import Todo.CssColor (CssColor(..), gradient)
 import Todo.List.Model (ListModel, ListMsg(..), PK, cancelEdit, createEntry, runPK, saveEdit, setHighlight, startEdit, storeModel)
 import Todo.Storage (STORAGE)
-import Unsafe.Coerce (unsafeCoerce)
 
 listUpdate
   :: forall aff
   .  ListModel
   -> ListMsg
-  -> UpdateResult (console::CONSOLE,dom::DOM,ref::REF,storage::STORAGE|aff) ListModel ListMsg
+  -> UpdateResult (console::CONSOLE,bonsai::BONSAI,storage::STORAGE|aff) ListModel ListMsg
 listUpdate model msg =
   case msg of
     Create str ->
@@ -64,16 +59,17 @@ storeFocusAndAnimateCmd
   :: forall aff
   .  PK
   -> ListModel
-  -> Cmd (console::CONSOLE,dom::DOM,storage::STORAGE|aff) ListMsg
+  -> Cmd (console::CONSOLE,bonsai::BONSAI,storage::STORAGE|aff) ListMsg
 storeFocusAndAnimateCmd pk m =
   emittingTask \ctx -> do
     _ <- storeModel m
     -- set the focus to the element todo-create
-    affElementAction (focus <<< unsafeCoerce) (ElementId "todo-create")
+    -- affElementAction P.focusElement id ctx.document
+    affElementAction focusElement (ElementId "todo-create") ctx.document
     for_ (gradient 16 highlightStartColor highlightEndColor) $ \col -> do
-      emitMessages ctx [SetHighlight (Just col) pk]
+      emitMessage ctx $ SetHighlight (Just col) pk
       delay (Milliseconds 200.0)
-    emitMessages ctx [SetHighlight Nothing pk]
+    emitMessage ctx $ SetHighlight Nothing pk
 
 
 highlightStartColor :: CssColor
