@@ -3,12 +3,18 @@ where
 
 import Prelude
 
+import Control.Comonad (extract)
 import Control.Monad.Aff (Aff)
+import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
+import Control.Monad.Eff.Now (NOW, nowDateTime)
+import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import Data.Array (concat, filter, sortBy)
 import Data.Foldable (class Foldable, foldl)
-import Data.Maybe (Maybe(..), fromJust, fromMaybe)
+import Data.Formatter.DateTime (FormatterCommand(..), format)
+import Data.List as L
+import Data.Maybe (Maybe(..), fromJust, fromMaybe, isJust)
 import Data.StrMap (StrMap, fromFoldable, fromFoldableWith, insert, lookup, toArrayWithKey, update, values)
 import Data.String (Pattern(..), contains, joinWith, null, split, trim)
 import Data.Tuple (Tuple(Tuple), snd)
@@ -55,15 +61,43 @@ data ListMsg
 emptyListModel :: ListModel
 emptyListModel = { maxPk: 0, todos: fromFoldable [], filter: "", newtodo: "", editPk: Nothing, edittodo: "" }
 
-createEntry :: ListModel -> String -> Tuple PK ListModel
-createEntry model str =
+createEntry :: ListModel -> Task -> Tuple PK ListModel
+createEntry model task =
   let
     maxPk = model.maxPk + 1
     pk    = show maxPk
-    entry = { task: parseTodoTxt str, pk: PK (pk), line: str, highlight: Nothing }
+    entry = { task, pk: PK (pk), line: todoTxt task, highlight: Nothing }
     todos = insert pk entry model.todos
   in
     Tuple (PK pk) (model { maxPk = maxPk, todos = todos })
+
+
+isoDateFmt :: L.List FormatterCommand
+isoDateFmt =
+  L.fromFoldable
+    [ YearFull
+    , (Placeholder "-")
+    , MonthTwoDigits
+    , (Placeholder "-")
+    , DayOfMonthTwoDigits
+    ]
+
+
+taskWithCreationDate :: forall eff. String -> Eff (now::NOW|eff) Task
+taskWithCreationDate str = do
+
+  let (Task taskRec) = parseTodoTxt str
+  if isJust taskRec.creationDate
+    then pure (Task taskRec)
+    else do
+      date <- nowDateString
+      pure $ Task (taskRec { creationDate = Just date })
+
+nowDateString :: forall eff. Eff (now::NOW|eff) String
+nowDateString = do
+  date <- extract <$> nowDateTime
+  pure $ format isoDateFmt date
+
 
 startEdit :: ListModel -> PK -> ListModel
 startEdit model (PK pk) =
@@ -93,7 +127,12 @@ setCompleted model (PK pk) b =
     doUpdate entry =
       let
         Task task = entry.task
-        task' = Task $ task { completed = b }
+        task' =
+          if b
+            then Task $ task
+              { completed = true
+              , completionDate = Just $ unsafePerformEff nowDateString }
+            else Task $ task { completed = false, completionDate = Nothing }
         entry' = entry { task = task', line = todoTxt task' }
       in
         Just entry'
@@ -127,7 +166,7 @@ importEntries :: ListModel -> String -> ListModel
 importEntries model str =
   foldl combine model lines
   where
-    combine m s = snd $ createEntry m s
+    combine m s = snd $ createEntry m (parseTodoTxt s)
     lines =
       filter (not <<< null)
         (trim <$> split (Pattern "\n") str)

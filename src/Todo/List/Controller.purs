@@ -7,12 +7,13 @@ import Bonsai (BONSAI, Cmd, UpdateResult, emitMessage, emittingTask, plainResult
 import Bonsai.DOM (ElementId(..), affElementAction, focusCmd, focusElement, focusSelectCmd)
 import Control.Monad.Aff (delay)
 import Control.Monad.Eff.Console (CONSOLE)
+import Control.Monad.Eff.Unsafe (unsafePerformEff)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(Nothing, Just))
 import Data.Time.Duration (Milliseconds(..))
-import Data.Tuple (uncurry)
+import Data.Tuple (Tuple(..), uncurry)
 import Todo.CssColor (CssColor(..), gradient)
-import Todo.List.Model (ListModel, ListMsg(..), PK, cancelEdit, createEntry, runPK, saveEdit, setCompleted, setHighlight, startEdit, storeModel)
+import Todo.List.Model (ListModel, ListMsg(..), PK, cancelEdit, createEntry, runPK, saveEdit, setCompleted, setHighlight, startEdit, storeModel, taskWithCreationDate)
 import Todo.Storage (STORAGE)
 
 listUpdate
@@ -22,9 +23,13 @@ listUpdate
   -> UpdateResult (console::CONSOLE,bonsai::BONSAI,storage::STORAGE|aff) ListModel ListMsg
 listUpdate model msg =
   case msg of
+
     Create str ->
-      uncurry storeFocusAndAnimate
-        (map (\m -> m { newtodo = "" }) (createEntry model str))
+      let
+        task = unsafePerformEff $ taskWithCreationDate str
+        (Tuple pk model') = createEntry model task
+      in
+        uncurry storeFocusAndAnimate (Tuple pk (model' { newtodo = "" }))
 
     NewInput str ->
       plainResult $ model { newtodo = str }
@@ -48,7 +53,7 @@ listUpdate model msg =
 
     CancelEdit ->
       { model: cancelEdit model
-      , cmd:   focusCmd (ElementId "todo-create")
+        , cmd:   focusCmd (ElementId "todo-create")
       }
 
   where

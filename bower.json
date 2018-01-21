@@ -7,7 +7,6 @@
     "type": "git",
     "url": "git://github.com/grmble/purescript-bonsai-todo.git"
   },
-
   "ignore": [
     "**/.*",
     "node_modules",
@@ -20,7 +19,9 @@
     "purescript-foreign": "^4.0.1",
     "purescript-foreign-generic": "^5.0.0",
     "purescript-string-parsers": "^3.0.1",
-    "purescript-bonsai": "^0.6.0"
+    "purescript-bonsai": "^0.6.0",
+    "purescript-now": "^3.0.0",
+    "purescript-formatters": "^3.0.1"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"
