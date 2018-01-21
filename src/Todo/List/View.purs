@@ -50,8 +50,8 @@ listView model =
         caption $ text "Your todo-list"
         thead $ do
           tr $ do
-            th ! cls "col-done" $ text "Done"
-            th ! cls "col-prio" $ text "Prio"
+            th ! cls "col-done" $ text "✔"
+            th ! cls "col-prio" $ text "Pri"
             th ! cls "col-todo" $ text "Todo"
             th ! cls "col-comp" $ text "Completed"
             th ! cls "col-crea" $ text "Created"
