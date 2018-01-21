@@ -12,7 +12,7 @@ import Data.Maybe (Maybe(Nothing, Just))
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple (uncurry)
 import Todo.CssColor (CssColor(..), gradient)
-import Todo.List.Model (ListModel, ListMsg(..), PK, cancelEdit, createEntry, runPK, saveEdit, setHighlight, startEdit, storeModel)
+import Todo.List.Model (ListModel, ListMsg(..), PK, cancelEdit, createEntry, runPK, saveEdit, setCompleted, setHighlight, startEdit, storeModel)
 import Todo.Storage (STORAGE)
 
 listUpdate
@@ -42,6 +42,9 @@ listUpdate model msg =
 
     SaveEdit str ->
       uncurry storeFocusAndAnimate $ saveEdit model str
+
+    SetCompleted pk b ->
+      uncurry storeFocusAndAnimate $ setCompleted model pk b
 
     CancelEdit ->
       { model: cancelEdit model

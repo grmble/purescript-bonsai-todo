@@ -2,11 +2,13 @@ module Todo.List.View
 where
 
 
-import Bonsai.Html (MarkupT, VNode, (!), (#!), (#!?), attribute, keyedElement, render, text, a, button, caption, div, input, legend, li, table, td, th, thead, tr, ul)
-import Bonsai.Html.Attributes (autofocus, cls, colspan, href, id_, name, placeholder, style, target, typ, value)
+import Prelude hiding (div)
+
 import Bonsai (Cmd, pureCommand)
 import Bonsai.EventDecoder (dataAttributeEvent)
-import Bonsai.Html.Events (onClick, onInput, onKeyEnter, onKeyEnterEscape)
+import Bonsai.Html (MarkupT, VNode, (!), (#!), (#!?), attribute, keyedElement, render, text, a, button, caption, div, input, legend, li, table, td, th, thead, tr, ul)
+import Bonsai.Html.Attributes (autofocus, checked, cls, colspan, href, id_, name, placeholder, style, target, typ, value)
+import Bonsai.Html.Events (onCheckedChange, onClick, onInput, onKeyEnter, onKeyEnterEscape)
 import Bonsai.Types (f2cmd)
 import Bonsai.VirtualDom (on)
 import Control.Monad.Eff.Exception (Error)
@@ -16,7 +18,6 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.StrMap (toArrayWithKey)
 import Data.Traversable (traverse_)
 import Data.Tuple (Tuple(Tuple))
-import Prelude hiding (div)
 import Todo.List.Model (ListModel, ListMsg(..), PK(..), ListEntry, countTags, filteredEntries, runPK)
 import Todo.Parser (Task(Task))
 
@@ -101,7 +102,12 @@ listView model =
           tr
             #!? map (\c -> style "background-color" (show c)) entry.highlight
             ! attribute "data-pk" pk $ do
-            td $ text $ if tsk.completed then "x" else ""
+            td $ input !
+              typ "checkbox" !
+              name "completed" !
+              value "y" !
+              checked tsk.completed !
+              onCheckedChange (SetCompleted (PK pk))
             td $ text $ fromMaybe "" tsk.priority
             td $ text tsk.text
             td $ text $ fromMaybe "" tsk.completionDate

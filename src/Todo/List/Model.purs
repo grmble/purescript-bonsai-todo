@@ -14,7 +14,7 @@ import Data.String (Pattern(..), contains, joinWith, null, split, trim)
 import Data.Tuple (Tuple(Tuple), snd)
 import Partial.Unsafe (unsafePartial)
 import Todo.CssColor (CssColor)
-import Todo.Parser (Task, parseTodoTxt, unTask)
+import Todo.Parser (Task(..), parseTodoTxt, todoTxt, unTask)
 import Todo.Storage (STORAGE, setItem)
 
 
@@ -49,6 +49,7 @@ data ListMsg
   | SetHighlight (Maybe CssColor) PK
   | StartEdit PK
   | SaveEdit String
+  | SetCompleted PK Boolean
   | CancelEdit
 
 emptyListModel :: ListModel
@@ -78,6 +79,24 @@ saveEdit model str =
     pure (Tuple (PK pk) (model { todos = todos, editPk = Nothing, edittodo = "" }))
   where
     doUpdate entry = Just entry { task = parseTodoTxt str, line = str }
+
+
+setCompleted :: ListModel -> PK -> Boolean -> Tuple PK ListModel
+setCompleted model (PK pk) b =
+
+  fromMaybe (Tuple (PK pk) model) $ do
+    let todos = update doUpdate pk model.todos
+    pure (Tuple (PK pk) (model { todos = todos }))
+
+  where
+
+    doUpdate entry =
+      let
+        Task task = entry.task
+        task' = Task $ task { completed = b }
+        entry' = entry { task = task', line = todoTxt task' }
+      in
+        Just entry'
 
 cancelEdit :: ListModel -> ListModel
 cancelEdit model =
