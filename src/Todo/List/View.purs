@@ -99,6 +99,7 @@ listView model =
                 ! id_ ("todo-edit-" <> (show $ unwrap pk))
                 ! typ "text"
                 ! value model.edittodo
+                ! onInput EditInput
                 ! onKeyEnterEscape (const SaveEdit) (const CancelEdit)
 
     todoTableShow :: PK -> TodoEntry -> Tuple PK (VNode ListMsg)

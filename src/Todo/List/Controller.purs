@@ -49,6 +49,9 @@ listUpdate model msg =
       , cmd:   focusSelectCmd (ElementId ("todo-edit-" <> show (unwrap pk)))
       }
 
+    EditInput s ->
+      plainResult $ model { edittodo = s }
+
     SaveEdit ->
       uncurry storeFocusAndAnimate $ runState saveEdit model
 

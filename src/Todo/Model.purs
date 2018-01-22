@@ -6,6 +6,7 @@ import Prelude
 import Control.Alt ((<|>))
 import Control.Monad.State (State, get, gets, modify, put, state)
 import Data.DateTime (DateTime)
+import Data.Either (fromRight)
 import Data.Foldable (for_)
 import Data.Formatter.DateTime as FD
 import Data.Int (fromString)
@@ -13,6 +14,8 @@ import Data.List as L
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromJust, fromMaybe)
 import Data.Newtype (class Newtype, unwrap)
+import Data.String.Regex as R
+import Data.String.Regex.Flags (noFlags)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 import Todo.CssColor (CssColor)
@@ -100,7 +103,7 @@ setEntryDate d =
           then task { completionDate = Just dstr }
           else task { creationDate = task.creationDate <|> Just dstr }
     in
-      e { task = Task task' }
+      e { task = Task task', line = todoTxt $ Task task' }
 
 startEdit :: PK -> State TodoModel Unit
 startEdit pk = do
@@ -113,7 +116,9 @@ saveEdit :: State TodoModel PK
 saveEdit = do
   m <- get
   for_ m.editPk
-    (modifyEntry (\e -> e { task = parseTodoTxt m.edittodo , line = m.edittodo }))
+    (modifyEntry \e ->
+      let tsk = parseTodoTxt m.edittodo
+      in  e { task = tsk , line = todoTxt tsk })
   cancelEdit
 
 cancelEdit :: State TodoModel PK
@@ -131,9 +136,29 @@ completeEntry :: Boolean -> PK -> State TodoModel PK
 completeEntry b pk = do
   flip modifyEntry pk \e ->
     let
+
+      rx = unsafePartial $ fromRight $ R.regex """(.*) pri:([A-Z])$"""  noFlags
+
+      appendPri t =
+        case t.priority of
+          Just s ->
+            t { text = t.text <> " pri:" <> s }
+          _ ->
+            t
+
+      removePri t =
+        case R.match rx t.text of
+          Just [ _, Just txt, Just pri ] ->
+            t { text = txt, priority = Just pri }
+          _ ->
+            t
+
       task = unwrap e.task
+
+      task' =
+        if b
+          then appendPri $ task { completed = true }
+          else removePri $ task { completed = false , completionDate = Nothing }
     in
-      if b
-        then e { task = Task task { completed = true } }
-        else e { task = Task task { completed = false, completionDate = Nothing }}
+      e { task = Task task', line = todoTxt $ Task task' }
   pure pk

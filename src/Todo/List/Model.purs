@@ -26,6 +26,7 @@ data ListMsg
   | FilterList String
   | SetHighlight (Maybe CssColor) PK
   | StartEdit PK
+  | EditInput String
   | SaveEdit
   | CancelEdit
   | SetCompleted PK Boolean
