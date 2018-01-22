@@ -12,19 +12,25 @@ import Bonsai.Html.Events (onCheckedChange, onClick, onInput, onKeyEnter, onKeyE
 import Bonsai.Types (f2cmd)
 import Bonsai.VirtualDom (on)
 import Control.Monad.Eff.Exception (Error)
+import Data.Array (filter)
+import Data.Bifunctor (lmap)
 import Data.Either (Either)
 import Data.Foreign (Foreign)
+import Data.List as L
+import Data.Map as M
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.StrMap (toArrayWithKey)
-import Data.Traversable (traverse_)
-import Data.Tuple (Tuple(Tuple))
-import Todo.List.Model (ListModel, ListMsg(..), PK(..), ListEntry, countTags, filteredEntries, runPK)
+import Data.Newtype (unwrap)
+import Data.String (Pattern(..), contains)
+import Data.Traversable (class Foldable, traverse_)
+import Data.Tuple (Tuple(..))
+import Todo.List.Model (ListMsg(..), sortedEntries)
+import Todo.Model (PK, TodoModel, TodoEntry, parsePK)
 import Todo.Parser (Task(Task))
 
 
 
 
-listView :: ListModel -> VNode ListMsg
+listView :: TodoModel -> VNode ListMsg
 listView model =
   -- not a form!  form input handling (ESC!) considered harmful
   render $ div ! cls "pure-g" $ do
@@ -67,32 +73,35 @@ listView model =
           ! value model.filter ! onInput FilterList
 
         ul ! cls "tag-list" $ do
-          traverse_ tagView (toArrayWithKey Tuple (countTags model))
+          traverse_ tagView (M.toAscUnfoldable (countTags model) :: Array (Tuple String Int))
 
   where
 
+    todoTableView :: Tuple PK TodoEntry -> Tuple String (VNode ListMsg)
     todoTableView (Tuple pk entry) =
+      lmap (show <<< unwrap)
       case model.editPk of
         Just editPk ->
-          if (runPK editPk) == pk
+          if editPk == pk
             then todoTableEdit pk
             else todoTableShow pk entry
         Nothing ->
           todoTableShow pk entry
 
+    todoTableEdit :: PK -> Tuple PK (VNode ListMsg)
     todoTableEdit pk =
       Tuple pk $
         render $
-          tr ! attribute "data-pk" pk $ do
+          tr ! attribute "data-pk" (show $ unwrap pk) $ do
             td ! colspan 5 $ do
               input ! cls "pure-input pure-u-1-1"
                 ! name "todo-edit"
-                ! id_ ("todo-edit-" <> pk)
+                ! id_ ("todo-edit-" <> (show $ unwrap pk))
                 ! typ "text"
                 ! value model.edittodo
-                ! onKeyEnterEscape SaveEdit (const CancelEdit)
+                ! onKeyEnterEscape (const SaveEdit) (const CancelEdit)
 
-    todoTableShow :: String -> ListEntry -> Tuple String (VNode ListMsg)
+    todoTableShow :: PK -> TodoEntry -> Tuple PK (VNode ListMsg)
     todoTableShow pk entry =
       let
         (Task tsk) =
@@ -101,13 +110,13 @@ listView model =
         markup =
           tr
             #!? map (\c -> style "background-color" (show c)) entry.highlight
-            ! attribute "data-pk" pk $ do
+            ! attribute "data-pk" (show $ unwrap pk) $ do
             td $ input !
               typ "checkbox" !
               name "completed" !
               value "y" !
               checked tsk.completed !
-              onCheckedChange (SetCompleted (PK pk))
+              onCheckedChange (SetCompleted pk)
             td $ text $ fromMaybe "" tsk.priority
             td $ text tsk.text
             td $ text $ fromMaybe "" tsk.completionDate
@@ -123,4 +132,25 @@ listView model =
 
 dataPkDecoder :: forall eff. Foreign -> Either Error (Cmd eff ListMsg)
 dataPkDecoder =
-  (f2cmd pureCommand <<< map StartEdit <<< map PK <<< dataAttributeEvent "pk")
+  (f2cmd pureCommand <<< map StartEdit <<< map parsePK <<< dataAttributeEvent "pk")
+
+
+filteredEntries :: TodoModel -> Array (Tuple PK TodoEntry)
+filteredEntries model =
+  filter
+    (\(Tuple a b) -> contains (Pattern model.filter) b.line)
+    (sortedEntries model)
+
+
+countWords :: forall f. Foldable f => Functor f => f String -> M.Map String Int
+countWords words =
+  M.fromFoldableWith (+) $ (countAs1 <$> words)
+  where
+    countAs1 x = Tuple x 1
+
+-- | Counts project and context tags
+countTags :: TodoModel -> M.Map String Int
+countTags model =
+  countWords $ L.concat $ tags <$> (M.values model.todos)
+  where
+    tags e = L.fromFoldable $ (unwrap e.task).projects <> (unwrap e.task).contexts

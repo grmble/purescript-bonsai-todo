@@ -9,10 +9,12 @@ import Bonsai.Html.Events (onClick, onInput)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (EXCEPTION)
+import Control.Monad.Eff.Now (NOW)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Todo.List.Controller (listUpdate)
-import Todo.List.Model (ListModel, ListMsg, emptyListModel, exportEntries, importEntries, storeModel)
+import Todo.List.Model (ListMsg, exportEntries, importEntries, storeModel)
 import Todo.List.View (listView)
+import Todo.Model (TodoModel, emptyTodoModel)
 import Todo.Storage (STORAGE, getItem)
 
 main :: forall e. Eff (bonsai::BONSAI,exception::EXCEPTION,storage::STORAGE| e) Unit
@@ -24,7 +26,7 @@ main = do
 
 emptyModel :: Model
 emptyModel =
-  { listModel:    emptyListModel
+  { todoModel: emptyTodoModel
   , importExport: Nothing
   }
 
@@ -32,10 +34,10 @@ importModel :: Maybe String -> Model
 importModel Nothing =
   emptyModel
 importModel (Just str) =
-  emptyModel { listModel = importEntries emptyModel.listModel str }
+  emptyModel { todoModel = importEntries emptyModel.todoModel str }
 
 type Model =
-  { listModel :: ListModel
+  { todoModel :: TodoModel
   , importExport:: Maybe String
   }
 
@@ -50,7 +52,16 @@ data Msg
   | ImportExportEnd
 
 
-update :: forall aff. Model -> Msg -> UpdateResult (console::CONSOLE,bonsai::BONSAI,storage::STORAGE|aff) Model Msg
+update
+  :: forall aff
+  .  Model
+  -> Msg
+  -> UpdateResult
+      ( console::CONSOLE
+      , bonsai::BONSAI
+      , now::NOW
+      , storage::STORAGE
+      | aff) Model Msg
 update model msg =
   case msg of
 
@@ -58,7 +69,7 @@ update model msg =
       delegateListMsg listMsg
 
     ImportExportStart ->
-      plainResult model { importExport = Just (exportEntries model.listModel)}
+      plainResult model { importExport = Just (exportEntries model.todoModel)}
 
     ImportExportText str ->
       plainResult model { importExport = Just str }
@@ -67,7 +78,7 @@ update model msg =
       let model2 = importModel model.importExport
       in  { model: model2
           , cmd: emittingTask \_ ->
-              store model2.listModel *> pure unit
+              store model2.todoModel *> pure unit
           }
 
   where
@@ -78,9 +89,9 @@ update model msg =
 
     delegateListMsg listMsg =
       mapResult
-        (model { listModel = _ })
+        (model { todoModel = _ })
         MainListMsg
-        (listUpdate model.listModel listMsg)
+        (listUpdate model.todoModel listMsg)
 
 
 view :: Model -> VNode Msg
@@ -92,7 +103,7 @@ view model =
 viewTodo :: Model -> VNode Msg
 viewTodo model =
   render $ div $ do
-    vnode (MainListMsg <$> listView model.listModel)
+    vnode (MainListMsg <$> listView model.todoModel)
     button ! cls "pure-button" ! onClick ImportExportStart $ do
       text "Import/Export"
 

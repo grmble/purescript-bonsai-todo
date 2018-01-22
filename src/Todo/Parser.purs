@@ -2,7 +2,6 @@ module Todo.Parser
   ( Task(..)
   , todoTxt
   , parseTodoTxt
-  , unTask
   )
 where
 
@@ -14,6 +13,7 @@ import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Newtype (class Newtype)
 import Data.String (Pattern(..), indexOf, singleton, split)
 import Text.Parsing.StringParser (Parser, runParser)
 import Text.Parsing.StringParser.Combinators (option, optionMaybe)
@@ -39,6 +39,8 @@ newtype Task =
   , contexts :: Array String
   }
 
+derive instance newtypeTask :: Newtype Task _
+
 derive instance genericTask :: Generic Task _
 instance showTask :: Show Task where
   show = genericShow
@@ -54,19 +56,6 @@ task comp prio compDate creaDate txt =
     , projects: findWordsStartingWith (Pattern "+") txt
     , contexts: findWordsStartingWith (Pattern "@") txt
     }
-
-unTask
-  :: Task
-  -> { priority :: Maybe String
-     , completed :: Boolean
-     , completionDate :: Maybe String
-     , creationDate :: Maybe String
-     , text :: String
-     , projects :: Array String
-     , contexts :: Array String
-     }
-unTask (Task tsk) =
-  tsk
 
 taskParser :: Parser Task
 taskParser = do
