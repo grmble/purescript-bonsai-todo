@@ -13,7 +13,8 @@ import Data.Int (fromString)
 import Data.List as L
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromJust, fromMaybe)
-import Data.Newtype (class Newtype, unwrap)
+import Data.Newtype (class Newtype, unwrap, wrap)
+import Data.String.Regex (Regex)
 import Data.String.Regex as R
 import Data.String.Regex.Flags (noFlags)
 import Data.Tuple (Tuple(..))
@@ -132,33 +133,38 @@ highlightEntry col =
   modifyEntry \e -> e { highlight = col }
 
 
+priRegex :: Regex
+priRegex =
+  unsafePartial $ fromRight $ R.regex """(.*) pri:([A-Z])$"""  noFlags
+
+completeTask :: PK -> State TodoModel Unit
+completeTask =
+  modifyEntry $ \e ->
+    let t = unwrap e.task
+    in  case t.priority of
+          Just s ->
+            e { task = wrap (t { completed = true, text = t.text <> " pri:" <> s }) }
+          Nothing ->
+            e { task = wrap (t { completed = true }) }
+
+uncompleteTask :: PK -> State TodoModel Unit
+uncompleteTask =
+  modifyEntry $ \e ->
+    let t = unwrap e.task
+    in  case R.match priRegex t.text of
+          Just [ _, Just txt, Just pri ] ->
+            e { task = wrap (t  { completed = false
+                                , completionDate = Nothing
+                                , text = txt
+                                , priority = Just pri }) }
+          _ ->
+            e { task = wrap (t { completed = false, completionDate = Nothing }) }
+
 completeEntry :: Boolean -> PK -> State TodoModel PK
 completeEntry b pk = do
-  flip modifyEntry pk \e ->
-    let
-
-      rx = unsafePartial $ fromRight $ R.regex """(.*) pri:([A-Z])$"""  noFlags
-
-      appendPri t =
-        case t.priority of
-          Just s ->
-            t { text = t.text <> " pri:" <> s }
-          _ ->
-            t
-
-      removePri t =
-        case R.match rx t.text of
-          Just [ _, Just txt, Just pri ] ->
-            t { text = txt, priority = Just pri }
-          _ ->
-            t
-
-      task = unwrap e.task
-
-      task' =
-        if b
-          then appendPri $ task { completed = true }
-          else removePri $ task { completed = false , completionDate = Nothing }
-    in
-      e { task = Task task', line = todoTxt $ Task task' }
+  if b
+    then completeTask pk
+    else uncompleteTask pk
+  flip modifyEntry pk $ \e ->
+    e { line = todoTxt e.task }
   pure pk
