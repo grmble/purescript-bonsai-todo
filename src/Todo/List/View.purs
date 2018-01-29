@@ -9,13 +9,10 @@ import Bonsai.EventDecoder (dataAttributeEvent)
 import Bonsai.Html (MarkupT, VNode, (!), (#!), (#!?), attribute, keyedElement, render, text, a, button, caption, div, input, legend, li, table, td, th, thead, tr, ul)
 import Bonsai.Html.Attributes (autofocus, checked, cls, colspan, href, id_, name, placeholder, style, target, typ, value)
 import Bonsai.Html.Events (onCheckedChange, onClick, onInput, onKeyEnter, onKeyEnterEscape)
-import Bonsai.Types (f2cmd)
 import Bonsai.VirtualDom (on)
-import Control.Monad.Eff.Exception (Error)
 import Data.Array (filter)
 import Data.Bifunctor (lmap)
-import Data.Either (Either)
-import Data.Foreign (Foreign)
+import Data.Foreign (F, Foreign)
 import Data.List as L
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -131,9 +128,9 @@ listView model =
 
 
 
-dataPkDecoder :: forall eff. Foreign -> Either Error (Cmd eff ListMsg)
+dataPkDecoder :: forall eff. Foreign -> F (Cmd eff ListMsg)
 dataPkDecoder =
-  (f2cmd pureCommand <<< map StartEdit <<< map parsePK <<< dataAttributeEvent "pk")
+  map pureCommand <<< map StartEdit <<< map parsePK <<< dataAttributeEvent "pk"
 
 
 filteredEntries :: TodoModel -> Array (Tuple PK TodoEntry)
