@@ -3,7 +3,7 @@ where
 
 import Prelude
 
-import Bonsai (BONSAI, Cmd, UpdateResult, emitMessage, emittingTask, plainResult)
+import Bonsai (BONSAI, Cmd, emitMessage, emittingTask, plainResult)
 import Bonsai.DOM (ElementId(..), affElementAction, focusCmd, focusElement, focusSelectCmd)
 import Control.Comonad (extract)
 import Control.Monad.Aff (delay)
@@ -23,10 +23,10 @@ import Todo.Storage (STORAGE)
 
 listUpdate
   :: forall aff
-  .  TodoModel
-  -> ListMsg
-  -> UpdateResult (console::CONSOLE,bonsai::BONSAI,now::NOW,storage::STORAGE|aff) TodoModel ListMsg
-listUpdate model msg =
+  .  ListMsg
+  -> TodoModel
+  -> Tuple (Cmd (console::CONSOLE,bonsai::BONSAI,now::NOW,storage::STORAGE|aff) ListMsg) TodoModel
+listUpdate msg model =
   case msg of
 
     Create str ->
@@ -45,9 +45,9 @@ listUpdate model msg =
       plainResult $ execState (highlightEntry color pk) model
 
     StartEdit pk ->
-      { model: execState (startEdit pk) model
-      , cmd:   focusSelectCmd (ElementId ("todo-edit-" <> show (unwrap pk)))
-      }
+      Tuple
+        (focusSelectCmd (ElementId ("todo-edit-" <> show (unwrap pk))))
+        (execState (startEdit pk) model)
 
     EditInput s ->
       plainResult $ model { edittodo = s }
@@ -59,9 +59,9 @@ listUpdate model msg =
       uncurry storeFocusAndAnimate $ runState (completeEntry b pk) model
 
     CancelEdit ->
-      { model: execState cancelEdit model
-      , cmd:   focusCmd (ElementId "todo-create")
-      }
+      Tuple
+        (focusCmd (ElementId "todo-create"))
+        (execState cancelEdit model)
 
     SetEntryDate pk d ->
       plainResult $ execState (setEntryDate d pk) model
@@ -69,7 +69,7 @@ listUpdate model msg =
 
   where
     storeFocusAndAnimate pk m =
-      { model: m, cmd: storeFocusAndAnimateCmd pk m }
+      Tuple (storeFocusAndAnimateCmd pk m) m
 
 storeFocusAndAnimateCmd
   :: forall aff

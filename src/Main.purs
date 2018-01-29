@@ -2,7 +2,7 @@ module Main where
 
 import Prelude hiding (div)
 
-import Bonsai (BONSAI, ElementId(..), UpdateResult, debugProgram, emittingTask, mapResult, plainResult, window)
+import Bonsai (BONSAI, Cmd, ElementId(..), debugProgram, plainResult, unitTask, window)
 import Bonsai.Html (VNode, (!), button, div, render, text, textarea, vnode)
 import Bonsai.Html.Attributes (cls, rows, value)
 import Bonsai.Html.Events (onClick, onInput)
@@ -10,7 +10,9 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Now (NOW)
+import Data.Bifunctor (bimap)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Tuple (Tuple(..))
 import Todo.List.Controller (listUpdate)
 import Todo.List.Model (ListMsg, exportEntries, importEntries, storeModel)
 import Todo.List.View (listView)
@@ -54,19 +56,17 @@ data Msg
 
 update
   :: forall aff
-  .  Model
-  -> Msg
-  -> UpdateResult
-      ( console::CONSOLE
-      , bonsai::BONSAI
-      , now::NOW
-      , storage::STORAGE
-      | aff) Model Msg
-update model msg =
+  .  Msg
+  -> Model
+  -> Tuple
+      (Cmd ( console::CONSOLE, bonsai::BONSAI, now::NOW, storage::STORAGE| aff) Msg)
+      Model
+update msg model =
   case msg of
 
     MainListMsg listMsg ->
-      delegateListMsg listMsg
+      bimap (map MainListMsg) (model { todoModel = _ })
+        (listUpdate listMsg model.todoModel)
 
     ImportExportStart ->
       plainResult model { importExport = Just (exportEntries model.todoModel)}
@@ -76,22 +76,8 @@ update model msg =
 
     ImportExportEnd ->
       let model2 = importModel model.importExport
-      in  { model: model2
-          , cmd: emittingTask \_ ->
-              store model2.todoModel *> pure unit
-          }
+      in  Tuple (unitTask $ storeModel model2.todoModel) model2
 
-  where
-
-    store listModel = do
-      _ <- storeModel listModel
-      pure []
-
-    delegateListMsg listMsg =
-      mapResult
-        (model { todoModel = _ })
-        MainListMsg
-        (listUpdate model.todoModel listMsg)
 
 
 view :: Model -> VNode Msg
