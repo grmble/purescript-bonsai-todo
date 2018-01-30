@@ -5,10 +5,10 @@ where
 import Prelude hiding (div)
 
 import Bonsai (Cmd, pureCommand)
-import Bonsai.EventDecoder (dataAttributeEvent)
+import Bonsai.EventDecoder (dataAttributeEvent, targetCheckedEvent)
 import Bonsai.Html (MarkupT, VNode, (!), (#!), (#!?), attribute, keyedElement, render, text, a, button, caption, div, input, legend, li, table, td, th, thead, tr, ul)
 import Bonsai.Html.Attributes (autofocus, checked, cls, colspan, href, id_, name, placeholder, style, target, typ, value)
-import Bonsai.Html.Events (onCheckedChange, onClick, onInput, onKeyEnter, onKeyEnterEscape)
+import Bonsai.Html.Events (onClick, onInput, onKeyEnter, onKeyEnterEscape)
 import Bonsai.VirtualDom (on)
 import Data.Array (filter)
 import Data.Bifunctor (lmap)
@@ -114,7 +114,8 @@ listView model =
               name "completed" !
               value "y" !
               checked tsk.completed !
-              onCheckedChange (SetCompleted pk)
+              on "change" checkedChangeEvent
+
             td $ text $ fromMaybe "" tsk.priority
             td $ text tsk.text
             td $ text $ fromMaybe "" tsk.completionDate
@@ -130,7 +131,14 @@ listView model =
 
 dataPkDecoder :: forall eff. Foreign -> F (Cmd eff ListMsg)
 dataPkDecoder =
-  map pureCommand <<< map StartEdit <<< map parsePK <<< dataAttributeEvent "pk"
+  -- map pureCommand <<< map StartEdit <<< map parsePK <<< dataAttributeEvent "pk"
+  map (pureCommand <<< StartEdit <<< parsePK) <<< dataAttributeEvent "pk"
+
+checkedChangeEvent :: forall eff. Foreign -> F (Cmd eff ListMsg)
+checkedChangeEvent ev = do
+  b <- targetCheckedEvent ev
+  str <- dataAttributeEvent "pk" ev
+  pure $ pureCommand $ SetCompleted (parsePK str) b
 
 
 filteredEntries :: TodoModel -> Array (Tuple PK TodoEntry)
