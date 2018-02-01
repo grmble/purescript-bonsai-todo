@@ -2,7 +2,7 @@ module Main where
 
 import Prelude hiding (div)
 
-import Bonsai (BONSAI, Cmd, ElementId(..), debugProgram, plainResult, unitTask, window)
+import Bonsai (BONSAI, Cmd, ElementId(..), debugProgram, noDebug, plainResult, unitTask, window)
 import Bonsai.Html (VNode, (!), button, div, render, text, textarea, vnode)
 import Bonsai.Html.Attributes (cls, rows, value)
 import Bonsai.Html.Events (onClick, onInput)
@@ -23,7 +23,7 @@ main :: forall e. Eff (bonsai::BONSAI,exception::EXCEPTION,storage::STORAGE| e) 
 main = do
   stored <- getItem "bonsai-todo"
   _ <- window >>=
-    debugProgram (ElementId "main") update view (importModel stored) true true
+    debugProgram (ElementId "main") update view (importModel stored) (noDebug { timing = true })
   pure unit
 
 emptyModel :: Model

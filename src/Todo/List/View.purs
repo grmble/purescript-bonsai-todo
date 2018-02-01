@@ -5,9 +5,9 @@ where
 import Prelude hiding (div)
 
 import Bonsai (Cmd, pureCommand)
-import Bonsai.EventDecoder (dataAttributeEvent, targetCheckedEvent)
+import Bonsai.EventHandlers (dataAttribute, dataAttributeHandler, targetChecked)
 import Bonsai.Html (MarkupT, VNode, (!), (#!), (#!?), attribute, keyedElement, render, text, a, button, caption, div, input, legend, li, table, td, th, thead, tr, ul)
-import Bonsai.Html.Attributes (autofocus, checked, cls, colspan, href, id_, name, placeholder, style, target, typ, value)
+import Bonsai.Html.Attributes (autofocus, checked, cls, colspan, defaultValue, href, id_, name, placeholder, style, target, typ, value)
 import Bonsai.Html.Events (onClick, onInput, onKeyEnter, onKeyEnterEscape)
 import Bonsai.VirtualDom (on)
 import Data.Array (filter)
@@ -49,7 +49,7 @@ listView model =
         ! onInput NewInput
         ! onKeyEnter Create
 
-      table ! cls "pure-table" ! on "dblclick" dataPkDecoder $ do
+      table ! cls "pure-table" ! on "dblclick" dataPkHandler $ do
         caption $ text "Your todo-list"
         thead $ do
           tr $ do
@@ -112,7 +112,9 @@ listView model =
             td $ input !
               typ "checkbox" !
               name "completed" !
-              value "y" !
+              -- value properties always show up in the diff, but commenting out
+              -- does not make a difference
+              defaultValue "y" !
               checked tsk.completed !
               on "change" checkedChangeEvent
 
@@ -129,15 +131,14 @@ listView model =
 
 
 
-dataPkDecoder :: forall eff. Foreign -> F (Cmd eff ListMsg)
-dataPkDecoder =
-  -- map pureCommand <<< map StartEdit <<< map parsePK <<< dataAttributeEvent "pk"
-  map (pureCommand <<< StartEdit <<< parsePK) <<< dataAttributeEvent "pk"
+dataPkHandler :: forall eff. Foreign -> F (Cmd eff ListMsg)
+dataPkHandler =
+  dataAttributeHandler (StartEdit <<< parsePK) "pk"
 
 checkedChangeEvent :: forall eff. Foreign -> F (Cmd eff ListMsg)
 checkedChangeEvent ev = do
-  b <- targetCheckedEvent ev
-  str <- dataAttributeEvent "pk" ev
+  b <- targetChecked ev
+  str <- dataAttribute "pk" ev
   pure $ pureCommand $ SetCompleted (parsePK str) b
 
 
