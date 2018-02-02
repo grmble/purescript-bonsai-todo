@@ -5,10 +5,10 @@ where
 import Prelude hiding (div)
 
 import Bonsai (Cmd, pureCommand)
-import Bonsai.EventHandlers (dataAttribute, dataAttributeHandler, targetChecked)
+import Bonsai.EventHandlers (dataAttribute, dataAttributeHandler, onWithOptions, targetChecked)
 import Bonsai.Html (MarkupT, VNode, (!), (#!), (#!?), attribute, keyedElement, render, text, a, button, caption, div, input, legend, li, table, td, th, thead, tr, ul)
 import Bonsai.Html.Attributes (autofocus, checked, cls, colspan, defaultValue, href, id_, name, placeholder, style, target, typ, value)
-import Bonsai.Html.Events (onClick, onInput, onKeyEnter, onKeyEnterEscape)
+import Bonsai.Html.Events (onClick, onInput, onKeyEnter, onKeyEnterEscape, preventDefaultStopPropagation)
 import Bonsai.VirtualDom (on)
 import Data.Array (filter)
 import Data.Bifunctor (lmap)
@@ -116,7 +116,7 @@ listView model =
               -- does not make a difference
               defaultValue "y" !
               checked tsk.completed !
-              on "change" checkedChangeEvent
+              onWithOptions preventDefaultStopPropagation "change" checkedChangeEvent
 
             td $ text $ fromMaybe "" tsk.priority
             td $ text tsk.text
