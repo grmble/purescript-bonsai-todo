@@ -3,7 +3,7 @@ where
 
 import Prelude
 
-import Bonsai (BONSAI, Cmd, emitMessage, emittingTask, plainResult)
+import Bonsai (BONSAI, Cmd, emitMessage, emittingTask, emptyCommand)
 import Bonsai.DOM (ElementId(..), affElementAction, focusCmd, focusElement, focusSelectCmd)
 import Control.Comonad (extract)
 import Control.Monad.Aff (delay)
@@ -36,13 +36,13 @@ listUpdate msg model =
         uncurry storeFocusAndAnimate (Tuple pk (model' { newtodo = "" }))
 
     NewInput str ->
-      plainResult $ model { newtodo = str }
+      Tuple emptyCommand $ model { newtodo = str }
 
     FilterList str ->
-      plainResult $ model { filter = str }
+      Tuple emptyCommand $ model { filter = str }
 
     SetHighlight color pk ->
-      plainResult $ execState (highlightEntry color pk) model
+      Tuple emptyCommand $ execState (highlightEntry color pk) model
 
     StartEdit pk ->
       Tuple
@@ -50,7 +50,7 @@ listUpdate msg model =
         (execState (startEdit pk) model)
 
     EditInput s ->
-      plainResult $ model { edittodo = s }
+      Tuple emptyCommand $ model { edittodo = s }
 
     SaveEdit ->
       uncurry storeFocusAndAnimate $ runState saveEdit model
@@ -64,7 +64,7 @@ listUpdate msg model =
         (execState cancelEdit model)
 
     SetEntryDate pk d ->
-      plainResult $ execState (setEntryDate d pk) model
+      Tuple emptyCommand $ execState (setEntryDate d pk) model
 
 
   where

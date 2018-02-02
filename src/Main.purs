@@ -2,7 +2,7 @@ module Main where
 
 import Prelude hiding (div)
 
-import Bonsai (BONSAI, Cmd, ElementId(..), debugProgram, noDebug, plainResult, unitTask, window)
+import Bonsai (BONSAI, Cmd, ElementId(..), debugProgram, emptyCommand, noDebug, unitTask, window)
 import Bonsai.Html (VNode, (!), button, div, render, text, textarea, vnode)
 import Bonsai.Html.Attributes (cls, rows, value)
 import Bonsai.Html.Events (onClick, onInput)
@@ -69,10 +69,10 @@ update msg model =
         (listUpdate listMsg model.todoModel)
 
     ImportExportStart ->
-      plainResult model { importExport = Just (exportEntries model.todoModel)}
+      Tuple emptyCommand $ model { importExport = Just (exportEntries model.todoModel)}
 
     ImportExportText str ->
-      plainResult model { importExport = Just str }
+      Tuple emptyCommand $ model { importExport = Just str }
 
     ImportExportEnd ->
       let model2 = importModel model.importExport
