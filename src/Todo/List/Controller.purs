@@ -4,7 +4,8 @@ where
 import Prelude
 
 import Bonsai (BONSAI, Cmd, emitMessage, emittingTask, emptyCommand)
-import Bonsai.DOM (ElementId(..), affElementAction, focusCmd, focusElement, focusSelectCmd)
+import Bonsai.Core.Delayed (focusCmd, focusSelectCmd)
+import Bonsai.DOM (ElementId(..), affF, elementById, focusElement)
 import Control.Comonad (extract)
 import Control.Monad.Aff (delay)
 import Control.Monad.Eff.Class (liftEff)
@@ -83,7 +84,9 @@ storeFocusAndAnimateCmd pk m =
     _ <- storeModel m
     -- set the focus to the element todo-create
     -- affElementAction P.focusElement id ctx.document
-    affElementAction focusElement (ElementId "todo-create") ctx.document
+    affF do
+      elem <- elementById (ElementId "todo-create") ctx.document
+      focusElement elem *> pure unit
     for_ (gradient 16 highlightStartColor highlightEndColor) $ \col -> do
       emitMessage ctx $ SetHighlight (Just col) pk
       delay (Milliseconds 200.0)

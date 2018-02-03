@@ -22,7 +22,7 @@ import Todo.Storage (STORAGE, getItem)
 main :: forall e. Eff (bonsai::BONSAI,exception::EXCEPTION,storage::STORAGE| e) Unit
 main = do
   stored <- getItem "bonsai-todo"
-  _ <- window >>=
+  _ <- window #
     debugProgram (ElementId "main") update view (importModel stored) (noDebug { timing = true })
   pure unit
 
