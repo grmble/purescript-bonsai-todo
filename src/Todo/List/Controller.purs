@@ -4,8 +4,8 @@ where
 import Prelude
 
 import Bonsai (BONSAI, Cmd, emitMessage, emittingTask, emptyCommand)
-import Bonsai.Core.Delayed (focusCmd, focusSelectCmd)
-import Bonsai.DOM (ElementId(..), affF, elementById, focusElement)
+import Bonsai.Core.DOM (focusCmd, focusSelectCmd)
+import Bonsai.DOM (DOM, ElementId(..), affF, elementById, focusElement)
 import Control.Comonad (extract)
 import Control.Monad.Aff (delay)
 import Control.Monad.Eff.Class (liftEff)
@@ -26,7 +26,7 @@ listUpdate
   :: forall aff
   .  ListMsg
   -> TodoModel
-  -> Tuple (Cmd (console::CONSOLE,bonsai::BONSAI,now::NOW,storage::STORAGE|aff) ListMsg) TodoModel
+  -> Tuple (Cmd (console::CONSOLE,bonsai::BONSAI,dom::DOM,now::NOW,storage::STORAGE|aff) ListMsg) TodoModel
 listUpdate msg model =
   case msg of
 
@@ -76,7 +76,7 @@ storeFocusAndAnimateCmd
   :: forall aff
   .  PK
   -> TodoModel
-  -> Cmd (console::CONSOLE,bonsai::BONSAI,now::NOW,storage::STORAGE|aff) ListMsg
+  -> Cmd (console::CONSOLE,bonsai::BONSAI,dom::DOM,now::NOW,storage::STORAGE|aff) ListMsg
 storeFocusAndAnimateCmd pk m =
   emittingTask \ctx -> do
     date <- liftEff $ extract <$> nowDateTime

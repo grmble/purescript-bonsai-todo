@@ -3,6 +3,7 @@ module Main where
 import Prelude hiding (div)
 
 import Bonsai (BONSAI, Cmd, ElementId(..), debugProgram, emptyCommand, noDebug, unitTask, window)
+import Bonsai.DOM (DOM)
 import Bonsai.Html (VNode, (!), button, div, render, text, textarea, vnode)
 import Bonsai.Html.Attributes (cls, rows, value)
 import Bonsai.Html.Events (onClick, onInput)
@@ -19,12 +20,15 @@ import Todo.List.View (listView)
 import Todo.Model (TodoModel, emptyTodoModel)
 import Todo.Storage (STORAGE, getItem)
 
-main :: forall e. Eff (bonsai::BONSAI,exception::EXCEPTION,storage::STORAGE| e) Unit
+main :: forall e. Eff (bonsai::BONSAI,dom::DOM,exception::EXCEPTION,storage::STORAGE| e) Unit
 main = do
   stored <- getItem "bonsai-todo"
-  _ <- window #
-    debugProgram (ElementId "main") update view (importModel stored) (noDebug { timing = true })
+  _ <- dbgProgram (ElementId "main") update view (importModel stored) window
   pure unit
+
+  where
+    dbgProgram =
+      debugProgram (noDebug { timing = true })
 
 emptyModel :: Model
 emptyModel =
@@ -59,7 +63,7 @@ update
   .  Msg
   -> Model
   -> Tuple
-      (Cmd ( console::CONSOLE, bonsai::BONSAI, now::NOW, storage::STORAGE| aff) Msg)
+      (Cmd ( console::CONSOLE, bonsai::BONSAI, dom::DOM, now::NOW, storage::STORAGE| aff) Msg)
       Model
 update msg model =
   case msg of
