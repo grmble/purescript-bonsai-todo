@@ -2,7 +2,7 @@ module Main where
 
 import Prelude hiding (div)
 
-import Bonsai (BONSAI, Cmd, ElementId(..), debugProgram, emptyCommand, noDebug, unitTask, window)
+import Bonsai (BONSAI, Cmd, ElementId(..), debugProgram, noDebug, unitTask, window)
 import Bonsai.DOM (DOM)
 import Bonsai.Html (VNode, (!), button, div, render, text, textarea, vnode)
 import Bonsai.Html.Attributes (cls, rows, value)
@@ -11,6 +11,7 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Now (NOW)
+import Control.Plus (empty)
 import Data.Bifunctor (bimap)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple (Tuple(..))
@@ -73,10 +74,10 @@ update msg model =
         (listUpdate listMsg model.todoModel)
 
     ImportExportStart ->
-      Tuple emptyCommand $ model { importExport = Just (exportEntries model.todoModel)}
+      Tuple empty $ model { importExport = Just (exportEntries model.todoModel)}
 
     ImportExportText str ->
-      Tuple emptyCommand $ model { importExport = Just str }
+      Tuple empty $ model { importExport = Just str }
 
     ImportExportEnd ->
       let model2 = importModel model.importExport

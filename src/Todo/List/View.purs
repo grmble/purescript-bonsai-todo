@@ -4,7 +4,7 @@ where
 
 import Prelude hiding (div)
 
-import Bonsai (Cmd, pureCommand)
+import Bonsai (Cmd)
 import Bonsai.EventHandlers (dataAttribute, dataAttributeHandler, onWithOptions, targetChecked)
 import Bonsai.Html (MarkupT, VNode, (!), (#!), (#!?), attribute, keyedElement, render, text, a, button, caption, div, input, legend, li, table, td, th, thead, tr, ul)
 import Bonsai.Html.Attributes (autofocus, checked, cls, colspan, defaultValue, href, id_, name, placeholder, style, target, typ, value)
@@ -139,7 +139,7 @@ checkedChangeEvent :: forall eff. Foreign -> F (Cmd eff ListMsg)
 checkedChangeEvent ev = do
   b <- targetChecked ev
   str <- dataAttribute "pk" ev
-  pure $ pureCommand $ SetCompleted (parsePK str) b
+  pure $ pure $ SetCompleted (parsePK str) b
 
 
 filteredEntries :: TodoModel -> Array (Tuple PK TodoEntry)
