@@ -19,9 +19,9 @@
     "purescript-foreign": "^4.0.1",
     "purescript-foreign-generic": "^5.0.0",
     "purescript-string-parsers": "^3.0.1",
-    "purescript-bonsai": "^0.6.0",
     "purescript-now": "^3.0.0",
-    "purescript-formatters": "^3.0.1"
+    "purescript-formatters": "^3.0.1",
+    "purescript-bonsai": "grmble/purescript-bonsai#master"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"
