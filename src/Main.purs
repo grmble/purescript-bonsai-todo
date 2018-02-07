@@ -95,8 +95,9 @@ viewTodo :: Model -> VNode Msg
 viewTodo model =
   render $ div $ do
     vnode (MainListMsg <$> listView model.todoModel)
-    button ! cls "pure-button" ! onClick ImportExportStart $ do
-      text "Import/Export"
+    div ! cls "l-box pure-u-1-3 pure-u-md-1-6" $
+      button ! cls "pure-button" ! onClick ImportExportStart $ do
+        text "Import/Export"
 
 viewImportExport :: Model -> VNode Msg
 viewImportExport model =

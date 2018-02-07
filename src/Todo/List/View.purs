@@ -6,7 +6,7 @@ import Prelude hiding (div)
 
 import Bonsai (Cmd)
 import Bonsai.EventHandlers (dataAttribute, dataAttributeHandler, onWithOptions, targetChecked)
-import Bonsai.Html (MarkupT, VNode, (!), (#!), (#!?), attribute, keyedElement, render, text, a, button, caption, div, input, legend, li, table, td, th, thead, tr, ul)
+import Bonsai.Html (MarkupT, VNode, a, attribute, button, caption, div, input, keyedElement, legend, li, render, table, td, text, th, thead, tr, ul, (!), (#!?))
 import Bonsai.Html.Attributes (autofocus, checked, cls, colspan, defaultValue, href, id_, name, placeholder, style, target, typ, value)
 import Bonsai.Html.Events (onClick, onInput, onKeyEnter, onKeyEnterEscape, preventDefaultStopPropagation)
 import Bonsai.VirtualDom (on)
@@ -30,14 +30,14 @@ import Todo.Parser (Task(Task))
 listView :: TodoModel -> VNode ListMsg
 listView model =
   -- not a form!  form input handling (ESC!) considered harmful
-  render $ div ! cls "pure-g" $ do
-    legend ! cls "pure-u-1-1" $ do
+  render $ do
+    legend ! cls "l-box-lr pure-u-1" $ do
       text "What would you like "
       a ! href "https://github.com/todotxt/todotxt/" ! target "_blank" $ do
         text "to do"
       text "?"
 
-    div ! cls "pure-u-5-6 pure-form" $ do
+    div ! cls "l-box pure-u-1 pure-u-md-5-6 pure-form" $ do
       input
         ! id_ "todo-create"
         ! cls "pure-input pure-u-1-1"
@@ -63,10 +63,10 @@ listView model =
           (map todoTableView (filteredEntries model))
 
 
-    div ! cls "pure-u-1-6" $ do
-      div #! style "padding-left" "2em" $ do
+    div ! cls "l-box pure-u-1-3 pure-u-md-1-6" $ do
+      div  $ do
         button ! onClick (FilterList "") $ text "Reset filter"
-        input ! cls "pure-input" ! name "filter" ! typ "text" ! placeholder "Filter"
+        input ! cls "pure-input pure-u-1" ! name "filter" ! typ "text" ! placeholder "Filter"
           ! value model.filter ! onInput FilterList
 
         ul ! cls "tag-list" $ do
@@ -120,8 +120,8 @@ listView model =
 
             td $ text $ fromMaybe "" tsk.priority
             td $ text tsk.text
-            td $ text $ fromMaybe "" tsk.completionDate
-            td $ text $ fromMaybe "" tsk.creationDate
+            td ! cls "col-comp" $ text $ fromMaybe "" tsk.completionDate
+            td ! cls "col-crea" $ text $ fromMaybe "" tsk.creationDate
       in
         Tuple pk (render markup)
 
