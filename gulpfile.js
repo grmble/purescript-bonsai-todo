@@ -52,7 +52,7 @@ gulp.task("dotpsci", function () {
 });
 */
 
-gulp.task("test", ["make"], function() {
+gulp.task("test", ["compile"], function() {
   return purescript.bundle({ src: "output/**/*.js", main: "Test.Main" })
     .pipe(run("node"));
 });
