@@ -1,0 +1,18 @@
+language: node_js
+sudo: required
+dist: trusty
+node_js: lts/*
+install:
+  - npm install -g bower purescript pulp gulp-cli
+script:
+  - npm install
+  - bower install
+  - gulp
+deploy:
+  local-dir: dist
+  provider: pages
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN  # Set in travis-ci.org dashboard, marked secure
+  keep-history: false
+  on:
+    branch: master
