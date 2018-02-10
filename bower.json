@@ -21,7 +21,8 @@
     "purescript-string-parsers": "^3.0.1",
     "purescript-now": "^3.0.0",
     "purescript-formatters": "^3.0.1",
-    "purescript-bonsai": "grmble/purescript-bonsai#master"
+    "purescript-bonsai": "grmble/purescript-bonsai#master",
+    "purescript-bonsai-html": "grmble/purescript-bonsai-html#master"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"

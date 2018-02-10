@@ -17,7 +17,7 @@ var distFiles = [
 ];
 
 gulp.task("clean", function() {
-  return del([ 'output', 'dist' ]);
+  return del([ 'output', 'bower_components', 'dist' ]);
 });
 
 gulp.task("clean-app.js", function() {
