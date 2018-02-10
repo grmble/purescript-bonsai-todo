@@ -2,7 +2,6 @@ var gulp = require("gulp");
 var purescript = require("gulp-purescript");
 var run = require("gulp-run");
 var del = require("del");
-var gzip = require("gulp-gzip");
 
 var sources = [
   "src/**/*.purs",
@@ -17,7 +16,7 @@ var distFiles = [
 ];
 
 gulp.task("clean", function() {
-  return del([ 'output', 'bower_components', 'dist' ]);
+  return del([ 'output', 'bower_components', 'node_modules', 'dist' ]);
 });
 
 gulp.task("clean-app.js", function() {
@@ -45,13 +44,6 @@ gulp.task("docs", function () {
     });
 });
 
-/*
-gulp.task("dotpsci", function () {
-  return purescript.psci({ src: sources })
-    .pipe(gulp.dest("."));
-});
-*/
-
 gulp.task("test", ["compile"], function() {
   return purescript.bundle({ src: "output/**/*.js", main: "Test.Main" })
     .pipe(run("node"));
@@ -62,13 +54,7 @@ gulp.task("copy", ["bundle"], function() {
     .pipe(gulp.dest("dist"));
 });
 
-gulp.task("gzip", ["bundle"], function() {
-  return gulp.src(distFiles)
-    .pipe(gzip())
-    .pipe(gulp.dest("dist"));
-});
 
-
-gulp.task("dist", ["copy", "gzip"]);
+gulp.task("dist", ["copy"]);
 
 gulp.task("default", ["bundle", "test", "dist"]);
