@@ -6,7 +6,7 @@ import Prelude hiding (div)
 
 import Bonsai (Cmd)
 import Bonsai.EventHandlers (dataAttribute, dataAttributeHandler, onWithOptions, targetChecked)
-import Bonsai.Html (MarkupT, VNode, a, attribute, button, caption, div, input, keyedElement, legend, li, render, table, td, text, th, thead, tr, ul, (!), (#!?))
+import Bonsai.Html (Markup, VNode, a, attribute, button, caption, div, input, keyed, keyedElement, legend, li, render, table, td, text, th, thead, tr, ul, (!), (#!?))
 import Bonsai.Html.Attributes (autofocus, checked, cls, colspan, defaultValue, href, id_, name, placeholder, style, target, typ, value)
 import Bonsai.Html.Events (onClick, onInput, onKeyEnter, onKeyEnterEscape, preventDefaultStopPropagation)
 import Bonsai.VirtualDom (on)
@@ -17,9 +17,9 @@ import Data.List as L
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
-import Data.String (Pattern(..), contains)
+import Data.String (Pattern(..), contains, toLower)
 import Data.Traversable (class Foldable, traverse_)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), uncurry)
 import Todo.List.Model (ListMsg(..), sortedEntries)
 import Todo.Model (PK, TodoModel, TodoEntry, parsePK)
 import Todo.Parser (Task(Task))
@@ -59,8 +59,8 @@ listView model =
             th ! cls "col-comp" $ text "Completed"
             th ! cls "col-crea" $ text "Created"
 
-        keyedElement "tbody" []
-          (map todoTableView (filteredEntries model))
+        keyedElement "tbody" $
+          traverse_ (uncurry keyed) (map todoTableView (filteredEntries model))
 
 
     div ! cls "l-box pure-u-1-3 pure-u-md-1-6" $ do
@@ -104,7 +104,7 @@ listView model =
       let
         (Task tsk) =
           entry.task
-        markup :: MarkupT ListMsg
+        markup :: Markup ListMsg
         markup =
           tr
             #!? map (\c -> style "background-color" (show c)) entry.highlight
@@ -144,9 +144,13 @@ checkedChangeEvent ev = do
 
 filteredEntries :: TodoModel -> Array (Tuple PK TodoEntry)
 filteredEntries model =
-  filter
-    (\(Tuple a b) -> contains (Pattern model.filter) b.line)
-    (sortedEntries model)
+  filter mustShow $ sortedEntries model
+
+  where
+    pat =
+      (Pattern $ toLower model.filter)
+    mustShow (Tuple a b) =
+      contains pat (toLower b.line)
 
 
 countWords :: forall f. Foldable f => Functor f => f String -> M.Map String Int
