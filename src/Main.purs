@@ -81,7 +81,7 @@ update msg model =
 
     ImportExportEnd ->
       let model2 = importModel model.importExport
-      in  Tuple (unitTask $ storeModel model2.todoModel) model2
+      in  Tuple (unitTask $ const $ storeModel model2.todoModel) model2
 
 
 
