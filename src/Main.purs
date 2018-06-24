@@ -2,15 +2,11 @@ module Main where
 
 import Prelude hiding (div)
 
-import Bonsai (BONSAI, Cmd, ElementId(..), debugProgram, noDebug, unitTask, window)
-import Bonsai.DOM (DOM)
+import Bonsai (Cmd, ElementId(..), debugProgram, noDebug, unitTask, window)
 import Bonsai.Html (VNode, (!), button, div, render, text, textarea, vnode)
 import Bonsai.Html.Attributes (cls, rows, value)
 import Bonsai.Html.Events (onClick, onInput)
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE)
-import Control.Monad.Eff.Exception (EXCEPTION)
-import Control.Monad.Eff.Now (NOW)
+import Effect (Effect)
 import Control.Plus (empty)
 import Data.Bifunctor (bimap)
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -19,9 +15,9 @@ import Todo.List.Controller (listUpdate)
 import Todo.List.Model (ListMsg, exportEntries, importEntries, storeModel)
 import Todo.List.View (listView)
 import Todo.Model (TodoModel, emptyTodoModel)
-import Todo.Storage (STORAGE, getItem)
+import Todo.Storage (getItem)
 
-main :: forall e. Eff (bonsai::BONSAI,dom::DOM,exception::EXCEPTION,storage::STORAGE| e) Unit
+main :: Effect Unit
 main = do
   stored <- getItem "bonsai-todo"
   _ <- dbgProgram (ElementId "main") update view (importModel stored) window
@@ -60,12 +56,9 @@ data Msg
 
 
 update
-  :: forall aff
-  .  Msg
+  :: Msg
   -> Model
-  -> Tuple
-      (Cmd ( console::CONSOLE, bonsai::BONSAI, dom::DOM, now::NOW, storage::STORAGE| aff) Msg)
-      Model
+  -> Tuple (Cmd Msg) Model
 update msg model =
   case msg of
 

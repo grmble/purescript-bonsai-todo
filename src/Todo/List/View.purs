@@ -12,7 +12,7 @@ import Bonsai.Html.Events (onClick, onInput, onKeyEnter, onKeyEnterEscape, preve
 import Bonsai.VirtualDom (on)
 import Data.Array (filter)
 import Data.Bifunctor (lmap)
-import Data.Foreign (F, Foreign)
+import Foreign (F, Foreign)
 import Data.List as L
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -70,7 +70,7 @@ listView model =
           ! value model.filter ! onInput FilterList
 
         ul ! cls "tag-list" $ do
-          traverse_ tagView (M.toAscUnfoldable (countTags model) :: Array (Tuple String Int))
+          traverse_ tagView (M.toUnfoldable (countTags model) :: Array (Tuple String Int))
 
   where
 
@@ -131,11 +131,11 @@ listView model =
 
 
 
-dataPkHandler :: forall eff. Foreign -> F (Cmd eff ListMsg)
+dataPkHandler :: Foreign -> F (Cmd ListMsg)
 dataPkHandler =
   dataAttributeHandler (StartEdit <<< parsePK) "pk"
 
-checkedChangeEvent :: forall eff. Foreign -> F (Cmd eff ListMsg)
+checkedChangeEvent :: Foreign -> F (Cmd ListMsg)
 checkedChangeEvent ev = do
   b <- targetChecked ev
   str <- dataAttribute "pk" ev

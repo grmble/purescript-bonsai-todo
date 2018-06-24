@@ -3,9 +3,9 @@ where
 
 import Prelude
 
-import Control.Monad.Aff (Aff)
-import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE, log)
+import Effect.Aff (Aff)
+import Effect.Class (liftEffect)
+import Effect.Console (log)
 import Control.Monad.State (execState)
 import Data.Array (filter, sortBy)
 import Data.DateTime (DateTime)
@@ -16,7 +16,7 @@ import Data.String (Pattern(..), joinWith, null, split, trim)
 import Data.Tuple (Tuple, snd)
 import Todo.CssColor (CssColor)
 import Todo.Model (PK, TodoEntry, TodoModel, createEntry)
-import Todo.Storage (STORAGE, setItem)
+import Todo.Storage (setItem)
 
 data ListMsg
   = Create String
@@ -51,7 +51,7 @@ sortedEntries model =
     order a b = (snd a).line `compare` (snd b).line
 
 -- | Store the todo list to local storage
-storeModel :: forall eff. TodoModel -> Aff (console::CONSOLE,storage::STORAGE|eff) Unit
-storeModel model = liftEff $ do
+storeModel :: TodoModel -> Aff Unit
+storeModel model = liftEffect $ do
   log "storing model"
   setItem "bonsai-todo" (exportEntries model)

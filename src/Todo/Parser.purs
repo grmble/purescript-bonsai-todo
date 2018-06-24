@@ -14,7 +14,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (class Newtype)
-import Data.String (Pattern(..), indexOf, singleton, split)
+import Data.String (Pattern(..), codePointFromChar, indexOf, singleton, split)
 import Text.Parsing.StringParser (Parser, runParser)
 import Text.Parsing.StringParser.Combinators (option, optionMaybe)
 import Text.Parsing.StringParser.String (regex, string, upperCaseChar)
@@ -116,7 +116,7 @@ findWordsStartingWith needle hay =
 
 priority :: Parser (Maybe String)
 priority =
-  map (map singleton)
+  map (map (singleton <<< codePointFromChar))
     (optionMaybe (string "(" *> upperCaseChar <* string ") "))
 
 completed :: Parser Boolean

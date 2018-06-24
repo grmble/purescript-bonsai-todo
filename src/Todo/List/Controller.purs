@@ -3,14 +3,12 @@ where
 
 import Prelude
 
-import Bonsai (BONSAI, Cmd, emitMessage, emittingTask)
+import Bonsai (Cmd, emitMessage, emittingTask)
 import Bonsai.Core.DOM (focusCmd, focusSelectCmd)
-import Bonsai.DOM (DOM, ElementId(..), affF, elementById, focusElement)
-import Control.Comonad (extract)
-import Control.Monad.Aff (delay)
-import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE)
-import Control.Monad.Eff.Now (NOW, nowDateTime)
+import Bonsai.DOM (ElementId(..), affF, elementById, focusElement)
+import Effect.Aff (delay)
+import Effect.Class (liftEffect)
+import Effect.Now (nowDateTime)
 import Control.Monad.State (execState, runState)
 import Control.Plus (empty)
 import Data.Foldable (for_)
@@ -21,13 +19,11 @@ import Data.Tuple (Tuple(..), uncurry)
 import Todo.CssColor (CssColor(..), gradient)
 import Todo.List.Model (ListMsg(..), storeModel)
 import Todo.Model (PK, TodoModel, cancelEdit, completeEntry, createEntry, highlightEntry, saveEdit, setEntryDate, startEdit)
-import Todo.Storage (STORAGE)
 
 listUpdate
-  :: forall aff
-  .  ListMsg
+  :: ListMsg
   -> TodoModel
-  -> Tuple (Cmd (console::CONSOLE,bonsai::BONSAI,dom::DOM,now::NOW,storage::STORAGE|aff) ListMsg) TodoModel
+  -> Tuple (Cmd ListMsg) TodoModel
 listUpdate msg model =
   case msg of
 
@@ -74,13 +70,12 @@ listUpdate msg model =
       Tuple (storeFocusAndAnimateCmd pk m) m
 
 storeFocusAndAnimateCmd
-  :: forall aff
-  .  PK
+  :: PK
   -> TodoModel
-  -> Cmd (console::CONSOLE,bonsai::BONSAI,dom::DOM,now::NOW,storage::STORAGE|aff) ListMsg
+  -> Cmd ListMsg
 storeFocusAndAnimateCmd pk m =
   emittingTask \ctx -> do
-    date <- liftEff $ extract <$> nowDateTime
+    date <- liftEffect $ nowDateTime
     emitMessage ctx (SetEntryDate pk date)
     _ <- storeModel m
     -- set the focus to the element todo-create

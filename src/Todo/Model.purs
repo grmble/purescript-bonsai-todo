@@ -5,6 +5,7 @@ import Prelude
 
 import Control.Alt ((<|>))
 import Control.Monad.State (State, get, gets, modify, put, state)
+import Data.Array.NonEmpty as NEA
 import Data.DateTime (DateTime)
 import Data.Either (fromRight)
 import Data.Foldable (for_)
@@ -61,12 +62,13 @@ nextPK = do
 
 putEntry :: TodoEntry -> State TodoModel Unit
 putEntry entry =
-  modify \m -> m { todos = M.insert entry.pk entry m.todos }
+  modify (\m -> m { todos = M.insert entry.pk entry m.todos }) *> pure unit
+
 
 
 modifyEntry :: (TodoEntry -> TodoEntry) -> PK -> State TodoModel Unit
 modifyEntry fn pk =
-  modify \m -> m { todos = M.update (Just <<< fn) pk m.todos }
+  modify (\m -> m { todos = M.update (Just <<< fn) pk m.todos }) *> pure unit
 
 
 getEntry :: PK -> State TodoModel (Maybe TodoEntry)
@@ -125,7 +127,7 @@ saveEdit = do
 cancelEdit :: State TodoModel PK
 cancelEdit = do
   pk <- gets _.editPk
-  modify \m -> m { editPk = Nothing, edittodo = ""}
+  _ <- modify \m -> m { editPk = Nothing, edittodo = ""}
   pure $ unsafePartial $ fromJust pk
 
 highlightEntry :: Maybe CssColor -> PK -> State TodoModel Unit
@@ -151,8 +153,8 @@ uncompleteTask :: PK -> State TodoModel Unit
 uncompleteTask =
   modifyEntry $ \e ->
     let t = unwrap e.task
-    in  case R.match priRegex t.text of
-          Just [ _, Just txt, Just pri ] ->
+    in  case NEA.toArray <$> R.match priRegex t.text of
+          Just [_, Just txt, Just pri] ->
             e { task = wrap (t  { completed = false
                                 , completionDate = Nothing
                                 , text = txt
